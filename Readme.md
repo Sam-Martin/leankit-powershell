@@ -6,7 +6,7 @@ This PowerShell module provides a series of cmdlets for interacting with the [Le
 Requires PowerShell 3.0 or above as this is when `Invoke-RestMethod` was introduced.
 
 ## Usage
-Simply extract the .psm1 file to your profile directory (e.g. `C:\users\\*username*\Documente\WindowsPowerShell\Modules\`) and run:  
+Simply extract the .psm1 file to your PowerShell profile directory (i.e. the `Modules` directory under wherever `$profile` points to in your PS console) and run:  
 `Import-Module Leankit-Module`  
 Once you've done this, all the cmdlets will be at your disposal, you can see a full list using `Get-Command -Module Leankit-Module`.
 
@@ -22,7 +22,7 @@ Add-LeanKitCard -BoardID 197340277 -Title "Test Card" -Description "Let's test!"
 
 ## Cmdlets
 Singularly named cmdlets are wrappers of their plurally named counterparts with a simpler set of parameters. 
-It is highly recommended that multiple commands of the same type are wrapped up into the more complex parameter set of the pluralised cmdlet for the sake of efficiency. (Otherwise an HTTP request will occur per cmd!)
+It is highly recommended that multiple commands of the same type are wrapped up into the more complex parameter set of the pluralised cmdlet for the sake of efficiency. (Otherwise an HTTP request will occur per item created/updated/deleted)
 
 * Add-LeanKitCard
 * Add-LeanKitCards 
