@@ -10,6 +10,16 @@ Simply extract the .psm1 file to your profile directory (e.g. `C:\users\\*userna
 `Import-Module Leankit-Module`  
 Once you've done this, all the cmdlets will be at your disposal, you can see a full list using `Get-Command -Module Leankit-Module`.
 
+### Example - Creating a Card
+```
+Import-Module Leankit-Module  
+Set-LeanKitAuth -url 'sammartintest.leankit.com'  
+$Board = Get-LeanKitBoard -BoardID 197340277  
+$CardType = $Board.CardTypes | Get-Random  
+$Lane = $board.Lanes | ?{$_.Type -eq 99} | Get-Random  
+Add-LeanKitCard -BoardID 197340277 -Title "Test Card" -Description "Let's test!" -CardTypeID $CardType.Id -LaneID $Lane.Id -UserWipOverrideComment "Testing"  
+```
+
 ## Cmdlets
 Singularly named cmdlets are wrappers of their plurally named counterparts with a simpler set of parameters. 
 It is highly recommended that multiple commands of the same type are wrapped up into the more complex parameter set of the pluralised cmdlet for the sake of efficiency. (Otherwise an HTTP request will occur per cmd!)
