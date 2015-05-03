@@ -41,6 +41,10 @@ function Add-LeanKitCard{
         # Description of the card
         [parameter(mandatory=$true)]
         [string]$Description,
+
+        # The ID of an external reference (e.g. a ticket) for this card
+        [parameter(mandatory=$false)]
+        [string]$ExternalCardID,
         
         # Identity of the type of card to be created
         [parameter(mandatory=$true)]
@@ -60,6 +64,7 @@ function Add-LeanKitCard{
         Description = $Description;
         TypeId=$CardTypeID;
         laneID=$LaneID;
+        ExternalCardID=$ExternalCardID;
         UserWipOverrideComment = $UserWipOverrideComment;
     })
 
