@@ -38,17 +38,17 @@ It is highly recommended that multiple commands of the same type are wrapped up 
 
 * Add-LeanKitCard
 * Add-LeanKitCards
-* Find-LeankitBoard
+* Find-LeanKitBoard
 * Get-LeanKitBoard
-* Get-LeankitCard
-* Get-LeankitCardsInBoard
-* Remove-Card
-* Remove-Cards
+* Get-LeanKitCard
+* Get-LeanKitCardsInBoard
 * Remove-LeanKitAuth
+* Remove-LeanKitCard
+* Remove-LeanKitCards
 * Set-LeanKitAuth
 * Test-LeankitAuthIsSet
-* Update-LeankitCard
-* Update-LeankitCards
+* Update-LeanKitCard
+* Update-LeanKitCards
 
 ## Tests
 This module comes with [Pester](https://github.com/pester/Pester/) tests for unit testing.
