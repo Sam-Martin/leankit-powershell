@@ -46,7 +46,7 @@ It is highly recommended that multiple commands of the same type are wrapped up 
 * Remove-LeanKitCard
 * Remove-LeanKitCards
 * Set-LeanKitAuth
-* Test-LeankitAuthIsSet
+* Test-LeanKitAuthIsSet
 * Update-LeanKitCard
 * Update-LeanKitCards
 
