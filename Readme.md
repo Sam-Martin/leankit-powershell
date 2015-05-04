@@ -7,7 +7,7 @@ This PowerShell module provides a series of cmdlets for interacting with the [Le
 Requires PowerShell 3.0 or above as this is when `Invoke-RestMethod` was introduced.
 
 ## Usage
-Download the [latest release](releases/latest) and  extract the .psm1 and .psd1 files to your PowerShell profile directory (i.e. the `Modules` directory under wherever `$profile` points to in your PS console) and run:  
+Download the [latest release](https://github.com/Toukakoukan/leankit-powershell/releases/latest) and  extract the .psm1 and .psd1 files to your PowerShell profile directory (i.e. the `Modules` directory under wherever `$profile` points to in your PS console) and run:  
 `Import-Module PSLeanKit`  
 Once you've done this, all the cmdlets will be at your disposal, you can see a full list using `Get-Command -Module PSLeanKit`.
 
