@@ -27,7 +27,7 @@ function Add-LeanKitCard{
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Created programatically by PSLeankit"
+        [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
     )
 
     $cardArray = @(@{
@@ -52,13 +52,13 @@ function Add-LeanKitCards{
         [parameter(mandatory=$true)]
         [ValidateScript({
             if($_.length -gt 100){
-                #"You cannot pass greater than 100 cards at a time to add-LeankitCards"
+                #"You cannot pass greater than 100 cards at a time to add-LeanKitCards"
                 return $false;
             }
            if(
                 ($_ |?{$_.UserWipOverrideComment}).length -lt $_.length
                ){
-                # "All cards must have UserWipOverrideComment when passing to Update-LeankitCards";
+                # "All cards must have UserWipOverrideComment when passing to Update-LeanKitCards";
                 return $false;
             }
             return $true;
@@ -66,16 +66,16 @@ function Add-LeanKitCards{
         [hashtable[]]$cards
     )
 
-    if(!(Test-LeankitAuthIsSet)){
+    if(!(Test-LeanKitAuthIsSet)){
         Set-LeanKitAuth
     }
     
-    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=Automation"
-    return Invoke-RestMethod -Uri $uri -Credential $global:leankitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json" 
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=Automation"
+    return Invoke-RestMethod -Uri $uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json" 
 
 }
 
-function Get-LeankitCard {
+function Get-LeanKitCard {
     param(
         # ID of the board in which the card we're getting resides
         [parameter(mandatory=$true)]
@@ -86,15 +86,15 @@ function Get-LeankitCard {
         [int]$CardID
     )
 
-    if(!(Test-LeankitAuthIsSet)){
+    if(!(Test-LeanKitAuthIsSet)){
         Set-LeanKitAuth
     }
 
-    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/GetCard/$CardID"
-    return $(Invoke-RestMethod -Uri $uri  -Credential $global:leankitCreds).ReplyData
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/GetCard/$CardID"
+    return $(Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds).ReplyData
 }
 
-function Update-LeankitCard {
+function Update-LeanKitCard {
     param(
         # ID of the board in which the card we're updating resides
         [parameter(mandatory=$true)]
@@ -109,12 +109,12 @@ function Update-LeankitCard {
         [string]$Title
     )
 
-    if(!(Test-LeankitAuthIsSet)){
+    if(!(Test-LeanKitAuthIsSet)){
         Set-LeanKitAuth
     }
     
     # Fetch the original card to amend
-    $Card = Get-LeankitCard -BoardID $BoardID -CardID $CardID
+    $Card = Get-LeanKitCard -BoardID $BoardID -CardID $CardID
 
     # Transform it into a hashtable
     $UpdatedCard = @{UserWipOverrideComment = "No override"};
@@ -123,10 +123,10 @@ function Update-LeankitCard {
     # Update our params (I wish PowerShell had ternary operators...)
     $UpdatedCard.Title = if($Title){$Title}else{$Card.Title};
 
-    return (Update-LeankitCards -BoardID $BoardID -Cards @($UpdatedCard))[0]
+    return (Update-LeanKitCards -BoardID $BoardID -Cards @($UpdatedCard))[0]
 }
 
-function Update-LeankitCards{
+function Update-LeanKitCards{
     
     param(
         [parameter(mandatory=$true)]
@@ -135,19 +135,19 @@ function Update-LeankitCards{
         [parameter(mandatory=$true)]
         [ValidateScript({
             if($_.length -gt 100){
-                # "You cannot pass greater than 100 cards at a time to Update-LeankitCards"
+                # "You cannot pass greater than 100 cards at a time to Update-LeanKitCards"
                 return $false;
             }
             if(
                 ($_ |?{$_.UserWipOverrideComment}).length -lt $_.length
                ){
-                # "All cards must have UserWipOverrideComment when passing to Update-LeankitCards";
+                # "All cards must have UserWipOverrideComment when passing to Update-LeanKitCards";
                 return $false;
             }
              if(
                 ($_ |?{$_.ID}).length -lt $_.length
                ){
-                # "All cards must have an ID when passing to Update-LeankitCards";
+                # "All cards must have an ID when passing to Update-LeanKitCards";
                 return $false;
             }
             return $true;
@@ -155,16 +155,16 @@ function Update-LeankitCards{
         [hashtable[]]$cards
     )
 
-    if(!(Test-LeankitAuthIsSet)){
+    if(!(Test-LeanKitAuthIsSet)){
         Set-LeanKitAuth
     }
 
-    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=Automation"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $global:leankitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=Automation"
+    $result = Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
     return $result.ReplyData
 }
 
-function Remove-Card {
+function Remove-LeanKitCard {
     param(
         # ID of the board in which the card we're deleting resides
         [parameter(mandatory=$true)]
@@ -175,10 +175,10 @@ function Remove-Card {
         [int]$CardID
     )
     
-    return Remove-Cards -BoardID $BoardID -CardIDs @($CardID)
+    return Remove-LeanKitCards -BoardID $BoardID -CardIDs @($CardID)
 }
 
-function Remove-Cards {
+function Remove-LeanKitCards {
     param(
         # ID of the board in which the cards we're deleting reside
         [parameter(mandatory=$true)]
@@ -189,11 +189,11 @@ function Remove-Cards {
         [int[]]$CardIDs
     )
 
-    if(!(Test-LeankitAuthIsSet)){
+    if(!(Test-LeanKitAuthIsSet)){
         Set-LeanKitAuth
     }
 
-    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/DeleteCards/"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $global:leankitCreds -Method Post -Body $(ConvertTo-Json $CardIDs) -ContentType "application/json" 
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/DeleteCards/"
+    $result = Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $CardIDs) -ContentType "application/json" 
     return $result.ReplyData
 }

@@ -1,49 +1,49 @@
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$DefaultsFile = "$here\PSLeankit.Pester.Defaults.json"
+$DefaultsFile = "$here\PSLeanKit.Pester.Defaults.json"
 
-# Load defaults from file (merging into $global:LeankitPesterTestDefaults
+# Load defaults from file (merging into $global:LeanKitPesterTestDefaults
 if(Test-Path $DefaultsFile){
-    $defaults = if($global:LeankitPesterTestDefaults){$global:LeankitPesterTestDefaults}else{@{}};
+    $defaults = if($global:LeanKitPesterTestDefaults){$global:LeanKitPesterTestDefaults}else{@{}};
     (Get-Content $DefaultsFile | Out-String | ConvertFrom-Json).psobject.properties | %{$defaults."$($_.Name)" = $_.Value}
     
     # Prompt for credentials
     $defaults.Creds = if($defaults.Creds){$defaults.Creds}else{Get-Credential}
 
-    $global:LeankitPesterTestDefaults = $defaults
+    $global:LeanKitPesterTestDefaults = $defaults
 }else{
     Write-Error "$DefaultsFile does not exist. Created example file. Please populate with your values";
     
     # Write example file
     @{
-        LeankitURL = 'sammartintest.leankit.com'
+        LeanKitURL = 'sammartintest.LeanKit.com'
         BoardID = 197340277
     } | ConvertTo-Json | Set-Content $DefaultsFile
     return;
 }
 
 Remove-Module PSLeanKit -ErrorAction SilentlyContinue
-Import-Module $here\PSLeankit.psd1
+Import-Module $here\PSLeanKit.psd1
     
 
-Describe "Leankit-Module" {
+Describe "LeanKit-Module" {
     
     It "Set-LeanKitAuth works" {
-        Set-LeanKitAuth -url $defaults.LeankitURL -credentials $defaults.Creds | Should be $true
+        Set-LeanKitAuth -url $defaults.LeanKitURL -credentials $defaults.Creds | Should be $true
     }
 
-    It "Find-LeankitBoard works"{
-        (Find-LeankitBoard).count -gt 0 | Should be $true
+    It "Find-LeanKitBoard works"{
+        (Find-LeanKitBoard).count -gt 0 | Should be $true
     }
 
     It "Get-LeanKitBoard works" {
-        ($LeankitBoard = Get-LeanKitBoard -BoardID $defaults.BoardID).Id | Should be $defaults.BoardID
+        ($LeanKitBoard = Get-LeanKitBoard -BoardID $defaults.BoardID).Id | Should be $defaults.BoardID
         
         # Pick a random lane for future tests
-        $script:RandomLane = $LeankitBoard.DefaultDropLaneID
+        $script:RandomLane = $LeanKitBoard.DefaultDropLaneID
         Write-Verbose "Picked Random Card Lane: $RandomLane"
 
         # Pick a random card type for future tests
-        $script:RandomCardType = ($LeankitBoard.CardTypes | Get-Random).Id
+        $script:RandomCardType = ($LeanKitBoard.CardTypes | Get-Random).Id
         Write-Verbose "Picked Random Card Type: $RandomCardType"
     }
 
@@ -59,22 +59,26 @@ Describe "Leankit-Module" {
     }
 
     It "Get-Card works" {
-        (Get-LeankitCard -BoardID $defaults.BoardID -CardID $CardID).id | Should be $CardID
+        (Get-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID).id | Should be $CardID
     }
 
-    It "Update-LeankitCard (and by extension Update-LeankitCards) works" {
-        $result = Update-LeankitCard -BoardID $defaults.BoardID -CardID $CardID -Title "Updated Test Card"
+    It "Update-LeanKitCard (and by extension Update-LeanKitCards) works" {
+        $result = Update-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID -Title "Updated Test Card"
 
         $result.UpdatedCardsCount | Should be 1
     }
 
-    It "Remove-Card works" {
+    It "Remove-LeanKitCard works" {
         
         # Weirdly DeletedCardsCount is the board version rather the number of the cards deleted, so don't be surprised if it's a large number
-        (Remove-Card -BoardID $defaults.BoardID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
+        (Remove-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
     }
 
-    It "Get-LeankitCardsInBoard works"{
-        (Get-LeankitCardsInBoard -BoardID $defaults.BoardID).Count -gt 0 | Should be $true
+    It "Get-LeanKitCardsInBoard works"{
+        (Get-LeanKitCardsInBoard -BoardID $defaults.BoardID).Count -gt 0 | Should be $true
+    }
+
+    It "Remove-LeanKitAuth works"{
+        Remove-LeanKitAuth | Should be $true
     }
 }
