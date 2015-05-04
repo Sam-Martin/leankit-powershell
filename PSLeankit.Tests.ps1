@@ -1,15 +1,28 @@
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-#$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
-#. "$here\$sut"
+$DefaultsFile = "$here\PSLeankit.Pester.Defaults.json"
 
-Remove-Module Leankit-Module -ErrorAction SilentlyContinue
-Import-Module $here\Leankit-Module.psm1
+# Load defaults from file (merging into $global:LeankitPesterTestDefaults
+if(Test-Path $DefaultsFile){
+    $defaults = if($global:LeankitPesterTestDefaults){$global:LeankitPesterTestDefaults}else{@{}};
+    (Get-Content $DefaultsFile | Out-String | ConvertFrom-Json).psobject.properties | %{$defaults."$($_.Name)" = $_.Value}
+    
+    # Prompt for credentials
+    $defaults.Creds = if($defaults.Creds){$defaults.Creds}else{Get-Credential}
 
-$global:defaults = @{
-    LeankitURL = 'sammartintest.leankit.com'
-    BoardID = 197340277
-    Creds = $(if($defaults.Creds){$defaults.Creds}else{Get-Credential})
+    $global:LeankitPesterTestDefaults = $defaults
+}else{
+    Write-Error "$DefaultsFile does not exist. Created example file. Please populate with your values";
+    
+    # Write example file
+    @{
+        LeankitURL = 'sammartintest.leankit.com'
+        BoardID = 197340277
+    } | ConvertTo-Json | Set-Content $DefaultsFile
+    return;
 }
+
+Remove-Module PSLeanKit -ErrorAction SilentlyContinue
+Import-Module $here\PSLeankit.psd1
     
 
 Describe "Leankit-Module" {
@@ -18,11 +31,15 @@ Describe "Leankit-Module" {
         Set-LeanKitAuth -url $defaults.LeankitURL -credentials $defaults.Creds | Should be $true
     }
 
+    It "Find-LeankitBoard works"{
+        (Find-LeankitBoard).count -gt 0 | Should be $true
+    }
+
     It "Get-LeanKitBoard works" {
         ($LeankitBoard = Get-LeanKitBoard -BoardID $defaults.BoardID).Id | Should be $defaults.BoardID
         
         # Pick a random lane for future tests
-        $script:RandomLane = ($LeankitBoard.Lanes | ?{$_.Type -eq 99} | Get-Random).Id
+        $script:RandomLane = $LeankitBoard.DefaultDropLaneID
         Write-Verbose "Picked Random Card Lane: $RandomLane"
 
         # Pick a random card type for future tests
@@ -55,5 +72,9 @@ Describe "Leankit-Module" {
         
         # Weirdly DeletedCardsCount is the board version rather the number of the cards deleted, so don't be surprised if it's a large number
         (Remove-Card -BoardID $defaults.BoardID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
+    }
+
+    It "Get-LeankitCardsInBoard works"{
+        (Get-LeankitCardsInBoard -BoardID $defaults.BoardID).Count -gt 0 | Should be $true
     }
 }

@@ -1,32 +1,3 @@
-﻿
-
-function Set-LeanKitAuth{
-    param(
-        [parameter(mandatory=$true)]
-        [string]$url,
-        
-        [parameter(mandatory=$true)]
-        [System.Management.Automation.PSCredential]$credentials
-    )
-    $script:leanKitURL = 'https://' + $url;
-    $script:leankitCreds = $credentials
-    return $true;
-}
-
-function Get-LeanKitBoard{
-    param(
-        [parameter(mandatory=$true)]
-        [int]$BoardID
-    )
-
-    if(!($script:leanKitURL -and $script:LeanKitCreds)){
-        throw "You must run set-leankitauth first"
-    }
-    
-    [string]$uri = $script:leanKitURL + "/Kanban/Api/Boards/$boardID/"
-    return $(Invoke-RestMethod -Uri $uri  -Credential $script:leankitCreds).ReplyData
-}
-
 function Add-LeanKitCard{
     param(
         
@@ -55,8 +26,8 @@ function Add-LeanKitCard{
         [int]$LaneID,
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
-        [parameter(mandatory=$true)]
-        [string]$UserWipOverrideComment
+        [parameter(mandatory=$false)]
+        [string]$UserWipOverrideComment="Created programatically by PSLeankit"
     )
 
     $cardArray = @(@{
@@ -95,9 +66,12 @@ function Add-LeanKitCards{
         [hashtable[]]$cards
     )
 
+    if(!(Test-LeankitAuthIsSet)){
+        Set-LeanKitAuth
+    }
     
-    [string]$uri = $script:leanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=Automation"
-    return Invoke-RestMethod -Uri $uri -Credential $script:leankitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json" 
+    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=Automation"
+    return Invoke-RestMethod -Uri $uri -Credential $global:leankitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json" 
 
 }
 
@@ -111,8 +85,13 @@ function Get-LeankitCard {
         [parameter(mandatory=$true)]
         [int]$CardID
     )
-    [string]$uri = $script:leanKitURL + "/Kanban/Api/Board/$boardID/GetCard/$CardID"
-    return $(Invoke-RestMethod -Uri $uri  -Credential $script:leankitCreds).ReplyData
+
+    if(!(Test-LeankitAuthIsSet)){
+        Set-LeanKitAuth
+    }
+
+    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/GetCard/$CardID"
+    return $(Invoke-RestMethod -Uri $uri  -Credential $global:leankitCreds).ReplyData
 }
 
 function Update-LeankitCard {
@@ -129,6 +108,10 @@ function Update-LeankitCard {
         [parameter(mandatory=$false)]
         [string]$Title
     )
+
+    if(!(Test-LeankitAuthIsSet)){
+        Set-LeanKitAuth
+    }
     
     # Fetch the original card to amend
     $Card = Get-LeankitCard -BoardID $BoardID -CardID $CardID
@@ -172,8 +155,12 @@ function Update-LeankitCards{
         [hashtable[]]$cards
     )
 
-    [string]$uri = $script:leanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=Automation"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $script:leankitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
+    if(!(Test-LeankitAuthIsSet)){
+        Set-LeanKitAuth
+    }
+
+    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=Automation"
+    $result = Invoke-RestMethod -Uri $uri  -Credential $global:leankitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
     return $result.ReplyData
 }
 
@@ -201,7 +188,12 @@ function Remove-Cards {
         [parameter(mandatory=$true)]
         [int[]]$CardIDs
     )
-    [string]$uri = $script:leanKitURL + "/Kanban/Api/Board/$boardID/DeleteCards/"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $script:leankitCreds -Method Post -Body $(ConvertTo-Json $CardIDs) -ContentType "application/json" 
+
+    if(!(Test-LeankitAuthIsSet)){
+        Set-LeanKitAuth
+    }
+
+    [string]$uri = $global:leanKitURL + "/Kanban/Api/Board/$boardID/DeleteCards/"
+    $result = Invoke-RestMethod -Uri $uri  -Credential $global:leankitCreds -Method Post -Body $(ConvertTo-Json $CardIDs) -ContentType "application/json" 
     return $result.ReplyData
 }
