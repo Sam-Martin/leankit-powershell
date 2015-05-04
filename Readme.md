@@ -1,5 +1,5 @@
 # PSLeankit  
-[![GitHub release](https://img.shields.io/github/release/Toukakoukan/leankit-powershell.svg)](https://github.com/Toukakoukan/leankit-powershell/releases/latest) [![GitHub license](https://img.shields.io/github/license/Toukakoukan/leankit-powershell.svg)](LICENSE) ![Test Coverage](https://img.shields.io/badge/coverage-89%25-yellowgreen.svg)  
+[![GitHub release](https://img.shields.io/github/release/Sam-Martin/leankit-powershell.svg)](https://github.com/Sam-Martin/leankit-powershell/releases/latest) [![GitHub license](https://img.shields.io/github/license/Sam-Martin/leankit-powershell.svg)](LICENSE) ![Test Coverage](https://img.shields.io/badge/coverage-89%25-yellowgreen.svg)  
 This PowerShell module provides a series of cmdlets for interacting with the [LeanKit REST API](https://support.leankit.com/hc/en-us/sections/200668393-LeanKit-API-Application-Programming-Interface-), performed by wrapping `Invoke-RestMethod` for the API calls.  
 **IMPORTANT:** Neither this module, nor its creator are in any way affiliated with LeanKit, or LeanKit Inc.
 
@@ -7,7 +7,7 @@ This PowerShell module provides a series of cmdlets for interacting with the [Le
 Requires PowerShell 3.0 or above as this is when `Invoke-RestMethod` was introduced.
 
 ## Usage
-Download the [latest release](https://github.com/Toukakoukan/leankit-powershell/releases/latest) and  extract the .psm1 and .psd1 files to your PowerShell profile directory (i.e. the `Modules` directory under wherever `$profile` points to in your PS console) and run:  
+Download the [latest release](https://github.com/Sam-Martin/leankit-powershell/releases/latest) and  extract the .psm1 and .psd1 files to your PowerShell profile directory (i.e. the `Modules` directory under wherever `$profile` points to in your PS console) and run:  
 `Import-Module PSLeanKit`  
 Once you've done this, all the cmdlets will be at your disposal, you can see a full list using `Get-Command -Module PSLeanKit`.
 
