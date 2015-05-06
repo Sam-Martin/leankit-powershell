@@ -7,6 +7,7 @@
 }
 
 function Set-LeanKitAuth{
+    [CmdletBinding()]
     param(
         [parameter(mandatory=$true)]
         [string]$url,
@@ -24,7 +25,9 @@ function Set-LeanKitAuth{
     Cleans up the variables containing your authentication information from your PowerShell session
 #>
 function Remove-LeanKitAuth{
-     Remove-Variable -Name LeanKitURL -Scope Global
-     Remove-Variable -Name LeanKitCreds -Scope Global
-     return $true;
+    [CmdletBinding()]
+    param()
+    Remove-Variable -Name LeanKitURL -Scope Global
+    Remove-Variable -Name LeanKitCreds -Scope Global
+    return $true;
 }
