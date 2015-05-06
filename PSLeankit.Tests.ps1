@@ -39,23 +39,57 @@ Describe "LeanKit-Module" {
         ($LeanKitBoard = Get-LeanKitBoard -BoardID $defaults.BoardID).Id | Should be $defaults.BoardID
         
         # Pick a random lane for future tests
-        $script:RandomLane = $LeanKitBoard.DefaultDropLaneID
+        $global:RandomLane = $LeanKitBoard.DefaultDropLaneID
         Write-Verbose "Picked Random Card Lane: $RandomLane"
 
         # Pick a random card type for future tests
-        $script:RandomCardType = ($LeanKitBoard.CardTypes | Get-Random).Id
+        $global:RandomCardType = ($LeanKitBoard.CardTypes | Get-Random).Id
         Write-Verbose "Picked Random Card Type: $RandomCardType"
+
+        # Pick a random user for future tests
+        $global:RandomUser = ($LeanKitBoard.BoardUsers | Get-Random).Id
+        
+        # Pick a random class of service for future tests
+        $global:RandomClassOfService = ($board.ClassesOfService | Get-Random).Id
     }
 
-    It "Add-LeanKitCard works (and by extension Add-LeanKitCards)" {
-        $result = Add-LeanKitCard -boardID $defaults.BoardID -LaneID $RandomLane `
-            -Title "Test Card" -Description "Testing!" -CardTypeID $RandomCardType `
-            -UserWipOverrideComment "Don't worry, only testing!" 
-        
-        $result.Title | Should be "Test Card"
+    It "Add-LeanKitCard works (and by extension Add-LeanKitCards and New-LeanKitCard)" {
+        $script:AddCardResult =  Add-LeanKitCard `
+            -BoardID $defaults.BoardID `
+            -LaneID  $RandomLane `
+            -Title  "Test Card" `
+            -Description  "Don't worry, only testing" `
+            -TypeID  $RandomCardType `
+            -Priority  4 `
+            -IsBlocked  $true `
+            -BlockReason  "I'm waiting on a dependency :(" `
+            -Index  0 `
+            -StartDate  (Get-Date).AddDays(3) `
+            -DueDate  (Get-Date).AddDays(7) `
+            -ExternalSystemName  "Service Now" `
+            -ExternalSystemUrl  "https://github.com/Sam-Martin/servicenow-powershell" `
+            -Tags "Groovy,Awesome" `
+            -ClassOfServiceID  $RandomClassOfService `
+            -ExternalCardID  "22" `
+            -AssignedUserIDs  $RandomUser
+
+        $AddCardResult.Title | Should be "Test Card"
+        $AddCardResult.LaneID | Should be $RandomLane
+        $AddCardResult.Description | Should be "Don't worry, only testing"
+        $AddCardResult.TypeID | Should be $RandomCardType
+        $AddCardResult.Priority | Should be 4
+        $AddCardResult.IsBlocked | Should be $true
+        $AddCardResult.BlockReason | Should be "I'm waiting on a dependency :("
+        $AddCardResult.Index | Should be 0
+        $AddCardResult.ExternalCardID | Should be 22
+        $AddCardResult.ExternalSystemName | Should be "Service Now"
+        $AddCardResult.ExternalSystemUrl | Should be "https://github.com/Sam-Martin/servicenow-powershell"
+        $AddCardResult.Tags | Should be "Groovy,Awesome"
+        $AddCardResult.ClassOfServiceID | Should be $RandomClassOfService
+        $AddCardResult.AssignedUserIDs | Should be @($RandomUser)
 
         # Save the card ID for our next test
-        $script:CardID = $result.Id;
+        $script:CardID = $AddCardResult.Id;
     }
 
     It "Get-Card works" {

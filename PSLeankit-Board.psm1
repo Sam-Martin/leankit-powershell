@@ -1,4 +1,6 @@
 function Get-LeanKitBoard{
+    [CmdletBinding()]
+    [OutputType([array])]
     param(
         [parameter(mandatory=$true)]
         [int]$BoardID
@@ -30,6 +32,9 @@ function Get-LeanKitBoard{
 #>
 
 function Find-LeanKitBoard{
+    [CmdletBinding()]
+    [OutputType([array])]
+    param()
 
     if(!(Test-LeanKitAuthIsSet)){
         Set-LeanKitAuth

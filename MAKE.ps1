@@ -13,7 +13,6 @@ function New-MakePackage{
         [string]$PackageName,
         [string]$ModuleName
     )
-    ($FilePatternExclusions | %{"MAKE.zip" -match $_}).contains($true)
 
     $FilesToInclude = Get-ChildItem -Path $here | ?{
         $File=$_;
@@ -66,7 +65,7 @@ $PackageFilePatternExclusions = @(
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-$Version = "0.1.1"
+$Version = "0.1.2"
 $ModuleName = "PSLeanKit"
 $PackageName = "$ModuleName-v$($version).zip";
 
