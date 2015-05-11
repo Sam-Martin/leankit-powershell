@@ -75,22 +75,22 @@ function New-LeanKitCard{
         [int[]]$AssignedUserIDs=@()
     )
     return @{
-        LaneID=$LaneID
-        Title=$Title
-        Description=$Description
-        TypeID=$TypeID
-        Priority=$Priority
-        IsBlocked=$IsBlocked
-        BlockReason=$BlockReason
-        Index=$Index
-        StartDate=$StartDate
-        DueDate=$DueDate
-        ExternalSystemName=$ExternalSystemName
-        ExternalSystemUrl=$ExternalSystemUrl
-        Tags=$Tags
-        ClassOfServiceID=$ClassOfServiceID
-        ExternalCardID=$ExternalCardID
-        AssignedUserIDs=$AssignedUserIDs
+        LaneID=$private:LaneID
+        Title=$private:Title
+        Description=$private:Description
+        TypeID=$private:TypeID
+        Priority=$private:Priority
+        IsBlocked=$private:IsBlocked
+        BlockReason=$private:BlockReason
+        Index=$private:Index
+        StartDate=$private:StartDate
+        DueDate=$private:DueDate
+        ExternalSystemName=$private:ExternalSystemName
+        ExternalSystemUrl=$private:ExternalSystemUrl
+        Tags=$private:Tags
+        ClassOfServiceID=$private:ClassOfServiceID
+        ExternalCardID=$private:ExternalCardID
+        AssignedUserIDs=$private:AssignedUserIDs
     }
 }
 
@@ -177,29 +177,29 @@ function Add-LeanKitCard{
         [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
     )
 
-    $StartDate = if($StartDate){(Get-Date $StartDate -format $global:LeanKitDateFormat)}else{""}
-    $DueDate = if($DueDate ){Get-Date $DueDate  -format $global:LeanKitDateFormat}else{""}
+    $private:StartDate = if($private:StartDate){(Get-Date $private:StartDate -format $global:LeanKitDateFormat)}else{""}
+    $private:DueDate = if($private:DueDate ){Get-Date $private:DueDate  -format $global:LeanKitDateFormat}else{""}
 
-    $script:Card = New-LeanKitCard `
-        -LaneID  $LaneID `
-        -Title  $Title `
-        -Description  $Description `
-        -TypeID  $TypeID `
-        -Priority  $Priority `
-        -IsBlocked  $IsBlocked `
-        -BlockReason  $BlockReason `
-        -Index  $Index `
-        -StartDate  $StartDate `
-        -DueDate  $DueDate `
-        -ExternalSystemName  $ExternalSystemName `
-        -ExternalSystemUrl  $ExternalSystemUrl `
-        -Tags  $Tags `
-        -ClassOfServiceID  $ClassOfServiceID `
-        -ExternalCardID  $ExternalCardID `
-        -AssignedUserIDs  $AssignedUserIDs
+    $private:Card = New-LeanKitCard `
+        -LaneID  $private:LaneID `
+        -Title  $private:Title `
+        -Description  $private:Description `
+        -TypeID  $private:TypeID `
+        -Priority  $private:Priority `
+        -IsBlocked  $private:IsBlocked `
+        -BlockReason  $private:BlockReason `
+        -Index  $private:Index `
+        -StartDate  $private:StartDate `
+        -DueDate  $private:DueDate `
+        -ExternalSystemName  $private:ExternalSystemName `
+        -ExternalSystemUrl  $private:ExternalSystemUrl `
+        -Tags  $private:Tags `
+        -ClassOfServiceID  $private:ClassOfServiceID `
+        -ExternalCardID  $private:ExternalCardID `
+        -AssignedUserIDs  $private:AssignedUserIDs
 
 
-    return (Add-LeanKitCards -boardID $BoardID -cards @($Card) -WipOverrideComment $UserWipOverrideComment).ReplyData
+    return (Add-LeanKitCards -boardID $private:BoardID -cards @($private:Card) -WipOverrideComment $private:UserWipOverrideComment).ReplyData
 }
 
 function Add-LeanKitCards{
@@ -249,7 +249,7 @@ function Get-LeanKitCard {
         Set-LeanKitAuth | Out-Null
     }
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/GetCard/$CardID"
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/GetCard/$private:CardID"
     return $(Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds).ReplyData
 }
 
@@ -338,23 +338,23 @@ function Update-LeanKitCard{
         [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
     )
    
-    if($StartDate){$StartDate = (Get-Date $StartDate -format $global:LeanKitDateFormat)}
-    if($DueDate){$DueDate = Get-Date $DueDate  -format $global:LeanKitDateFormat}
+    if($private:StartDate){$private:StartDate = (Get-Date $private:StartDate -format $global:LeanKitDateFormat)}
+    if($private:DueDate){$private:DueDate = Get-Date $private:DueDate  -format $global:LeanKitDateFormat}
     
     # Pipe the card's existing values into a hashtable for manipulation 
-    $CardHashTable = @{};
-    $Card = Get-LeanKitCard -boardID $BoardID -CardID $CardID;
-    $Card | Get-Member | ?{$_.MemberType -eq "NoteProperty"} | %{$CardHashTable.add($_.name, $Card.$($_.name))}
+    $private:CardHashTable = @{};
+    $private:Card = Get-LeanKitCard -boardID $private:BoardID -CardID $private:Id;
+    $private:Card | Get-Member | ?{$_.MemberType -eq "NoteProperty"} | %{$private:CardHashTable.add($_.name, $private:Card.$($_.name))}
 
     # Loop through our params (those that are set) and ensure the hashtable reflects the values we've updated
-    foreach($key in $CardHashTable.Keys.Clone()){
+    foreach($private:key in $private:CardHashTable.Keys.Clone()){
 
-        if(([array]$PSBoundParameters.keys) -Contains($key)){
-            $CardHashTable.$key = (Get-Item variable:\$key).Value
+        if(([array]$PSBoundParameters.keys) -Contains($private:key)){
+            $private:CardHashTable.$private:key = (Get-Variable  -Scope Private -Name $private:key).Value
         }
     }
 
-    return Update-LeanKitCards -BoardID $BoardID -Cards @($CardHashTable)  -UserWipOverrideComment $UserWipOverrideComment
+    return Update-LeanKitCards -BoardID $private:BoardID -Cards @($private:CardHashTable)  -UserWipOverrideComment $private:UserWipOverrideComment
 }
 
 function Update-LeanKitCards{
@@ -389,12 +389,12 @@ function Update-LeanKitCards{
         Set-LeanKitAuth | Out-Null
     }
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=$UserWipOverrideComment"
-    $result = Invoke-RestMethod -Uri $uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
+    [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/UpdateCards?wipOverrideComment=$private:UserWipOverrideComment"
+    $private:result = Invoke-RestMethod -Uri $private:uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $private:cards) -ContentType "application/json" 
     if($result.ReplyCode -ne 201){
-        return $result
+        return $private:result
     }else{
-        return $result.ReplyData
+        return $private:result.ReplyData
     }
 }
 
@@ -411,7 +411,7 @@ function Remove-LeanKitCard {
         [int]$CardID
     )
     
-    return Remove-LeanKitCards -BoardID $BoardID -CardIDs @($CardID)
+    return Remove-LeanKitCards -BoardID $private:BoardID -CardIDs @($private:CardID)
 }
 
 function Remove-LeanKitCards {
@@ -431,7 +431,7 @@ function Remove-LeanKitCards {
         Set-LeanKitAuth | Out-Null
     }
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/DeleteCards/"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $CardIDs) -ContentType "application/json" 
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/DeleteCards/"
+    $result = Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $private:CardIDs) -ContentType "application/json" 
     return $result.ReplyData
 }

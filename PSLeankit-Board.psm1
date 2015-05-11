@@ -10,25 +10,25 @@ function Get-LeanKitBoard{
         Set-LeanKitAuth | Out-Null
     }
     
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Boards/$boardID/"
+    [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Boards/$private:boardID/"
 
-    $Board = $(Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds).ReplyData
+    $private:Board = $(Invoke-RestMethod -Uri $private:uri  -Credential $global:LeanKitCreds).ReplyData
 
     # Add the custom type to each card to enable a default view
-    $Board | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Board")}
-    $Board.Lanes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Lane")}
-    if($Board.Lanes.cards){
-        $Board.Lanes.cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    $private:Board | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Board")}
+    $private:Board.Lanes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Lane")}
+    if($private:Board.Lanes.cards){
+        $private:Board.Lanes.cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
     }
-    if($Board.Archive){
-        $Board.Archive | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    if($private:Board.Archive){
+        $private:Board.Archive | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
     }
-    if($Board.Backlog.Cards){
-        $Board.Backlog.Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    if($private:Board.Backlog.Cards){
+        $private:Board.Backlog.Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
     }
-    $Board.CardTypes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.CardType")}
+    $private:Board.CardTypes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.CardType")}
 
-    return $Board
+    return $private:Board
 }
 
 
@@ -46,8 +46,8 @@ function Find-LeanKitBoard{
         Set-LeanKitAuth | Out-Null
     }
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Boards/"
-    return $(Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds).ReplyData
+    [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Boards/"
+    return $(Invoke-RestMethod -Uri $private:uri  -Credential $global:LeanKitCreds).ReplyData
 }
 
 <#
@@ -63,10 +63,10 @@ function Get-LeanKitCardsInBoard{
         [int]$BoardID
     )
 
-    $Board = Get-LeanKitBoard -BoardID $BoardID
-    $Cards = $board.Lanes.cards + $board.Archive + $board.Backlog.Cards;
+    $private:Board = Get-LeanKitBoard -BoardID $private:BoardID
+    $private:Cards = $private:Board.Lanes.cards + $private:Board.Archive + $private:Board.Backlog.Cards;
     # Add the custom type to each card to enable a default view
-    $Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    $private:Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
 
-    return $Cards
+    return [array]$private:Cards
 }
