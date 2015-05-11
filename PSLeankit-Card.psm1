@@ -27,6 +27,7 @@ function New-LeanKitCard{
 
         # Numeric priority of card
         [parameter(mandatory=$false)]
+        [ValidateRange(0,3)]
         [int]$Priority=0,
 
         # Whether the card action is 'blocked'
@@ -102,38 +103,38 @@ function Add-LeanKitCard{
     [OutputType([array])]
     param(
         
-        # ID of the board to which to add the card
+        # ID of the board in which to update the card
         [parameter(mandatory=$true)]
         [int]$BoardID,
 
-        # ID of the lane to add the card to
-        [parameter(mandatory=$true)]
+        # ID of the lane to update the card to
+        [parameter(mandatory=$false)]
         [int]$LaneID,
 
         # Title of the card
-        [parameter(mandatory=$true)]
+        [parameter(mandatory=$false)]
         [string]$Title,
         
         # Description of the card
-        [parameter(mandatory=$true)]
+        [parameter(mandatory=$false)]
         [string]$Description,
 
-        # Identity of the type of card to be created
-        [parameter(mandatory=$true)]
+        # Identity to which to update the card
+        [parameter(mandatory=$false)]
         [alias("CardTypeID")]
         [int]$TypeID,
 
-        # Numeric priority of card
+        # Numeric priority to which to update the card
         [parameter(mandatory=$false)]
-        [int]$Priority=0,
+        [int]$Priority,
 
         # Whether the card action is 'blocked'
         [parameter(mandatory=$false)]
-        [boolean]$IsBlocked=$false,
+        [boolean]$IsBlocked,
 
         # The reason the card action is blocked!
         [parameter(mandatory=$false)]
-        [string]$BlockReason=$null,
+        [string]$BlockReason,
 
         # Card's location in the lane?
         [parameter(mandatory=$false)]
@@ -141,23 +142,23 @@ function Add-LeanKitCard{
 
         # Time the card's action will start
         [parameter(mandatory=$false)]
-        $StartDate=$null,
+        $StartDate,
 
         # Time the card's action will be due
         [parameter(mandatory=$false)]
-        $DueDate=$null,
+        $DueDate,
 
         # The name of the external system which the ticket is referencing with "ExternalCardID"
         [parameter(mandatory=$false)]
-        [string]$ExternalSystemName=0,
+        [string]$ExternalSystemName,
 
         # The url of the external system which the ticket is referencing with "ExternalCardID"
         [parameter(mandatory=$false)]
-        [string]$ExternalSystemUrl=0,
+        [string]$ExternalSystemUrl,
 
         # Comma seperated string of tags
         [parameter(mandatory=$false)]
-        [string]$Tags=0,
+        [string]$Tags,
 
         # ID of the class of service to be assigned to this card
         [parameter(mandatory=$false)]
@@ -169,19 +170,15 @@ function Add-LeanKitCard{
         
         # Array of user IDs assigned to this card
         [parameter(mandatory=$false)]
-        [int[]]$AssignedUserIDs=@(),
+        [int[]]$AssignedUserIDs,
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
         [parameter(mandatory=$false)]
         [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
     )
 
-    # Fetch the date format for the user (API doesn't use ISO standard date formats :O)
-    $script:Board = Get-LeanKitBoard -BoardID $BoardID 
-    $script:DateFormat= ($Board.BoardUsers | ?{$_.EmailAddress -eq $global:LeanKitCreds.UserName}).DateFormat
-
-    $StartDate = if($StartDate){(Get-Date $StartDate -format $DateFormat)}else{""}
-    $DueDate = if($DueDate ){Get-Date $DueDate  -format $DateFormat}else{""}
+    $StartDate = if($StartDate){(Get-Date $StartDate -format $global:LeanKitDateFormat)}else{""}
+    $DueDate = if($DueDate ){Get-Date $DueDate  -format $global:LeanKitDateFormat}else{""}
 
     $script:Card = New-LeanKitCard `
         -LaneID  $LaneID `
@@ -227,7 +224,7 @@ function Add-LeanKitCards{
     )
 
     if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
+        Set-LeanKitAuth | Out-Null
     }
     
     [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=$WipOverrideComment"
@@ -249,45 +246,115 @@ function Get-LeanKitCard {
     )
 
     if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
+        Set-LeanKitAuth | Out-Null
     }
 
     [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/GetCard/$CardID"
     return $(Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds).ReplyData
 }
 
-function Update-LeanKitCard {
+function Update-LeanKitCard{
     [CmdletBinding()]
     [OutputType([array])]
     param(
-        # ID of the board in which the card we're updating resides
+        
+        # ID of the board in which to update the card
         [parameter(mandatory=$true)]
         [int]$BoardID,
 
-        # ID of the card we're updating
+         # ID of the card to update
         [parameter(mandatory=$true)]
-        [int]$CardID,
+        [alias('CardID')]
+        [int]$ID,
 
-        # Title to change the card to have
+        # ID of the lane to update the card to
         [parameter(mandatory=$false)]
-        [string]$Title
+        [int]$LaneID,
+
+        # Title of the card
+        [parameter(mandatory=$false)]
+        [string]$Title,
+        
+        # Description of the card
+        [parameter(mandatory=$false)]
+        [string]$Description,
+
+        # Identity to which to update the card
+        [parameter(mandatory=$false)]
+        [alias("CardTypeID")]
+        [int]$TypeID,
+
+        # Numeric priority to which to update the card
+        [parameter(mandatory=$false)]
+        [ValidateRange(0,3)]
+        [int]$Priority,
+
+        # Whether the card action is 'blocked'
+        [parameter(mandatory=$false)]
+        [boolean]$IsBlocked,
+
+        # The reason the card action is blocked!
+        [parameter(mandatory=$false)]
+        [string]$BlockReason,
+
+        # Card's location in the lane?
+        [parameter(mandatory=$false)]
+        [int]$Index=0,
+
+        # Time the card's action will start
+        [parameter(mandatory=$false)]
+        $StartDate,
+
+        # Time the card's action will be due
+        [parameter(mandatory=$false)]
+        $DueDate,
+
+        # The name of the external system which the ticket is referencing with "ExternalCardID"
+        [parameter(mandatory=$false)]
+        [string]$ExternalSystemName,
+
+        # The url of the external system which the ticket is referencing with "ExternalCardID"
+        [parameter(mandatory=$false)]
+        [string]$ExternalSystemUrl,
+
+        # Comma seperated string of tags
+        [parameter(mandatory=$false)]
+        [string]$Tags,
+
+        # ID of the class of service to be assigned to this card
+        [parameter(mandatory=$false)]
+        [int]$ClassOfServiceID=$null,
+
+        # The ID of an external reference (e.g. a ticket) for this card
+        [parameter(mandatory=$false)]
+        [string]$ExternalCardID,
+        
+        # Array of user IDs assigned to this card
+        [parameter(mandatory=$false)]
+        [int[]]$AssignedUserIDs,
+
+        # A comment to be added in case we're overriding the lane's Work in Process limit
+        [parameter(mandatory=$false)]
+        [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
     )
-
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
-    }
+   
+    if($StartDate){$StartDate = (Get-Date $StartDate -format $global:LeanKitDateFormat)}
+    if($DueDate){$DueDate = Get-Date $DueDate  -format $global:LeanKitDateFormat}
     
-    # Fetch the original card to amend
-    $Card = Get-LeanKitCard -BoardID $BoardID -CardID $CardID
+    # Pipe the card's existing values into a hashtable for manipulation 
+    $CardHashTable = @{};
+    $Card = Get-LeanKitCard -boardID $BoardID -CardID $CardID;
+    $Card | Get-Member | ?{$_.MemberType -eq "NoteProperty"} | %{$CardHashTable.add($_.name, $Card.$($_.name))}
 
-    # Transform it into a hashtable
-    $UpdatedCard = @{UserWipOverrideComment = "No override"};
-    $Card | Get-Member | ?{$_.MemberType -eq "NoteProperty"} | %{$UpdatedCard.add($_.name, $Card.$($_.name))}
+    # Loop through our params (those that are set) and ensure the hashtable reflects the values we've updated
+    foreach($key in $CardHashTable.Keys.Clone()){
 
-    # Update our params (I wish PowerShell had ternary operators...)
-    $UpdatedCard.Title = if($Title){$Title}else{$Card.Title};
+        if(([array]$PSBoundParameters.keys) -Contains($key)){
+            $CardHashTable.$key = (Get-Item variable:\$key).Value
+        }
+    }
 
-    return (Update-LeanKitCards -BoardID $BoardID -Cards @($UpdatedCard))[0]
+    return Update-LeanKitCards -BoardID $BoardID -Cards @($CardHashTable)  -UserWipOverrideComment $UserWipOverrideComment
 }
 
 function Update-LeanKitCards{
@@ -295,32 +362,40 @@ function Update-LeanKitCards{
     [OutputType([array])]
     param(
         [parameter(mandatory=$true)]
-        [int]$boardID,
+        [int]$BoardID,
 
         [parameter(mandatory=$true)]
         [ValidateScript({
             if($_.length -gt 100){
-                # "You cannot pass greater than 100 cards at a time to Update-LeanKitCards"
+                # You cannot pass greater than 100 cards at a time to Update-LeanKitCards
                 return $false;
             }
             if(
                 ($_ |?{$_.ID}).length -lt $_.length
                ){
-                # "All cards must have an ID when passing to Update-LeanKitCards";
+                # All cards must have an ID when passing to Update-LeanKitCards;
                 return $false;
             }
             return $true;
         })]
-        [hashtable[]]$cards
+        [hashtable[]]$Cards,
+
+        # A message to provide in case we override a lane's Work in Process limit
+        [parameter(mandatory=$false)]
+        [string]$UserWipOverrideComment="Updated by PSLeankit automatically"
     )
 
     if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
+        Set-LeanKitAuth | Out-Null
     }
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=Automation"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
-    return $result.ReplyData
+    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/UpdateCards?wipOverrideComment=$UserWipOverrideComment"
+    $result = Invoke-RestMethod -Uri $uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards) -ContentType "application/json" 
+    if($result.ReplyCode -ne 201){
+        return $result
+    }else{
+        return $result.ReplyData
+    }
 }
 
 function Remove-LeanKitCard {
@@ -353,7 +428,7 @@ function Remove-LeanKitCards {
     )
 
     if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
+        Set-LeanKitAuth | Out-Null
     }
 
     [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/DeleteCards/"

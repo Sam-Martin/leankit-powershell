@@ -12,7 +12,7 @@
 RootModule = 'PSLeankit.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.1.2'
+ModuleVersion = '0.1.3'
 
 # ID used to uniquely identify this module
 GUID = 'a3de7c5a-8c68-444b-a824-8f8efb30fef6'

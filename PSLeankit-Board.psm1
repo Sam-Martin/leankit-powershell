@@ -7,7 +7,7 @@ function Get-LeanKitBoard{
     )
 
     if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
+        Set-LeanKitAuth | Out-Null
     }
     
     [string]$uri = $global:LeanKitURL + "/Kanban/Api/Boards/$boardID/"
@@ -16,11 +16,17 @@ function Get-LeanKitBoard{
 
     # Add the custom type to each card to enable a default view
     $Board | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Board")}
-    $board.Lanes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Lane")}
-    $board.Lanes.cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
-    $board.Archive | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
-    $board.Backlog.Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
-    $board.CardTypes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.CardType")}
+    $Board.Lanes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Lane")}
+    if($Board.Lanes.cards){
+        $Board.Lanes.cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    }
+    if($Board.Archive){
+        $Board.Archive | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    }
+    if($Board.Backlog.Cards){
+        $Board.Backlog.Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
+    }
+    $Board.CardTypes | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.CardType")}
 
     return $Board
 }
@@ -37,7 +43,7 @@ function Find-LeanKitBoard{
     param()
 
     if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth
+        Set-LeanKitAuth | Out-Null
     }
 
     [string]$uri = $global:LeanKitURL + "/Kanban/Api/Boards/"
@@ -49,6 +55,8 @@ function Find-LeanKitBoard{
     Gets all cards in a given board
 #>
 function Get-LeanKitCardsInBoard{
+    [CmdletBinding()]
+    [OutputType([array])]
     param(
         # ID of the board to fetch cards from
         [parameter(mandatory=$true)]
