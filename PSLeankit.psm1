@@ -17,6 +17,17 @@ function Set-LeanKitAuth{
     )
     $global:LeanKitURL = 'https://' + $url;
     $global:LeanKitCreds = $credentials
+    
+    # Fetch the date format for the user (API doesn't use ISO standard date formats :( )
+    try{
+        $Board = Find-LeanKitBoard -ErrorAction Stop | Get-Random
+        $Board = Get-LeanKitBoard -BoardID $Board.Id -ErrorAction Stop
+        $global:LeanKitDateFormat= ($Board.BoardUsers | ?{$_.EmailAddress -eq $global:LeanKitCreds.UserName}).DateFormat
+    }catch{
+        Write-Error $_.Exception.Message;
+        return $false;
+    }
+
     return $true;
 }
 

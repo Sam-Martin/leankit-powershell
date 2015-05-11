@@ -65,7 +65,7 @@ $PackageFilePatternExclusions = @(
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-$Version = "0.1.2"
+$Version = "0.1.3"
 $ModuleName = "PSLeanKit"
 $PackageName = "$ModuleName-v$($version).zip";
 
@@ -75,8 +75,8 @@ $CoveragePercent = 100-(($testResult.CodeCoverage.NumberOfCommandsMissed/$testRe
 
 # Update/Create the package and 
 if($TestResult.FailedCount -eq 0){
-    New-MakePackage -PackageFilePatternExclusions $PackageFilePatternExclusions -PackageName $PackageName -ModuleName $ModuleName
     Update-CodeCoveragePercent -CodeCoverage $CoveragePercent
     UpdateManifest -ManifestPath "$here\$ModuleName.psd1" -Version $Version
+    New-MakePackage -PackageFilePatternExclusions $PackageFilePatternExclusions -PackageName $PackageName -ModuleName $ModuleName
 }
  
