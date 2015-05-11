@@ -139,7 +139,7 @@ Describe "LeanKit-Module" {
     It "Remove-LeanKitCard works" {
         
         # Weirdly DeletedCardsCount is the board version rather the number of the cards deleted, so don't be surprised if it's a large number
-        #(Remove-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
+        (Remove-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
     }
 
     It "Get-LeanKitCardsInBoard works"{
