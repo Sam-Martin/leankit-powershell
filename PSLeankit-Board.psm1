@@ -64,7 +64,7 @@ function Get-LeanKitCardsInBoard{
     )
 
     $private:Board = Get-LeanKitBoard -BoardID $private:BoardID
-    $private:Cards = $private:Board.Lanes.cards + $private:Board.Archive + $private:Board.Backlog.Cards;
+    $private:Cards = @($private:Board.Lanes.cards) + @($private:Board.Archive) + @($private:Board.Backlog.Cards);
     # Add the custom type to each card to enable a default view
     $private:Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
 
