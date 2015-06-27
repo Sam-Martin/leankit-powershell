@@ -199,7 +199,7 @@ function Add-LeanKitCard{
         -AssignedUserIDs  $private:AssignedUserIDs
 
 
-    return (Add-LeanKitCards -boardID $private:BoardID -cards @($private:Card) -WipOverrideComment $private:UserWipOverrideComment).ReplyData
+    return Add-LeanKitCards -boardID $private:BoardID -cards @($private:Card) -WipOverrideComment $private:UserWipOverrideComment
 }
 
 function Add-LeanKitCards{
@@ -228,7 +228,15 @@ function Add-LeanKitCards{
     }
     
     [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=$WipOverrideComment"
-    return [array](Invoke-RestMethod -Uri $uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json")
+    $private:result = Invoke-RestMethod -Uri $uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json"
+    if($private:result.ReplyCode -ne 201){
+        Write-Warning "Failed to add cards `r`n`t$($private:result.ReplyCode) - $($private:result.ReplyText)";
+        return $private:result
+    }else{
+        return $private:result.ReplyData
+    }
+
+    
 
 }
 
@@ -391,11 +399,13 @@ function Update-LeanKitCards{
 
     [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/UpdateCards?wipOverrideComment=$private:UserWipOverrideComment"
     $private:result = Invoke-RestMethod -Uri $private:uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $private:cards) -ContentType "application/json" 
-    if($result.ReplyCode -ne 201){
+    if($private:result.ReplyCode -ne 201){
+        Write-Warning "Failed to update cards `r`n`t$($private:result.ReplyCode) - $($private:result.ReplyText)";
         return $private:result
     }else{
-        return $private:result.ReplyData
+        return @($private:result).ReplyData
     }
+
 }
 
 function Remove-LeanKitCard {
