@@ -60,12 +60,13 @@ Describe "LeanKit-Module" {
             -Index  0 `
             -StartDate  (Get-Date).AddDays(3) `
             -DueDate  (Get-Date).AddDays(7) `
-            -ExternalSystemName  "Service Now" `
-            -ExternalSystemUrl  "https://github.com/Sam-Martin/servicenow-powershell" `
             -Tags "Groovy,Awesome" `
-            -ClassOfServiceID  $RandomClassOfService `
-            -ExternalCardID  "22" `
-            -AssignedUserIDs  $RandomUser
+            -AssignedUserIDs  $RandomUser `
+            #-ClassOfServiceID  $RandomClassOfService `
+            #-ExternalSystemName  "Service Now" `
+            #-ExternalSystemUrl  "https://github.com/Sam-Martin/servicenow-powershell" `
+            #-ExternalCardID  "22" `
+            
 
         $AddCardResult.Title | Should be "Test Card"
         $AddCardResult.LaneID | Should be $RandomLane
@@ -75,11 +76,13 @@ Describe "LeanKit-Module" {
         $AddCardResult.IsBlocked | Should be $true
         $AddCardResult.BlockReason | Should be "I'm waiting on a dependency :("
         $AddCardResult.Index | Should be 0
+        <#
         $AddCardResult.ExternalCardID | Should be 22
         $AddCardResult.ExternalSystemName | Should be "Service Now"
         $AddCardResult.ExternalSystemUrl | Should be "https://github.com/Sam-Martin/servicenow-powershell"
-        $AddCardResult.Tags | Should be "Groovy,Awesome"
         $AddCardResult.ClassOfServiceID | Should be $RandomClassOfService
+        #>
+        $AddCardResult.Tags | Should be "Groovy,Awesome"
         $AddCardResult.AssignedUserIDs | Should be @($RandomUser)
 
         # Save the card ID for our next test
@@ -110,13 +113,16 @@ Describe "LeanKit-Module" {
             -Index  0 `
             -StartDate  (Get-Date).AddDays(2) `
             -DueDate  (Get-Date).AddDays(8) `
-            -ExternalSystemName  "Service Now - Updated" `
-            -ExternalSystemUrl  "https://github.com/Sam-Martin/servicenow-powershell#Updated" `
             -Tags "Groovy,Awesome,Fabulous" `
-            -ExternalCardID  "44" `
             -AssignedUserIDs $RandomUser `
+            -Priority  1 `
+            <#
             -ClassOfServiceID  $RandomClassOfService `
-            -Priority  1
+            -ExternalCardID  "44" `
+            -ExternalSystemName  "Service Now - Updated" `
+            -ExternalSystemUrl  "https://github.com/Sam-Martin/servicenow-powershell#Updated" 
+            #>
+            
 
         $UpdateCardResult.UpdatedCardsCount | Should be 1
         $global:UpdatedCard =  Get-LeanKitCard -CardID $CardID -boardID $defaults.BoardID
@@ -128,11 +134,13 @@ Describe "LeanKit-Module" {
         $UpdatedCard.IsBlocked | Should be $false
         $UpdatedCard.BlockReason | Should be "I'm waiting on a dependency :( - Updated"
         $UpdatedCard.Index | Should be 0
+        <#
         $UpdatedCard.ExternalCardID | Should be 44
         $UpdatedCard.ExternalSystemName | Should be "Service Now - Updated"
         $UpdatedCard.ExternalSystemUrl | Should be "https://github.com/Sam-Martin/servicenow-powershell#Updated"
-        $UpdatedCard.Tags | Should be "Groovy,Awesome,Fabulous"
         $UpdatedCard.ClassOfServiceID | Should be $RandomClassOfService
+        #>
+        $UpdatedCard.Tags | Should be "Groovy,Awesome,Fabulous"
         $UpdatedCard.AssignedUserIDs | Should be @($RandomUser)
     }
 

@@ -1,5 +1,5 @@
 # PSLeankit  
-[![GitHub release](https://img.shields.io/github/release/Sam-Martin/leankit-powershell.svg)](https://github.com/Sam-Martin/leankit-powershell/releases/latest) [![GitHub license](https://img.shields.io/github/license/Sam-Martin/leankit-powershell.svg)](LICENSE) ![Test Coverage](https://img.shields.io/badge/coverage-87%25-yellowgreen.svg)  
+[![GitHub release](https://img.shields.io/github/release/Sam-Martin/leankit-powershell.svg)](https://github.com/Sam-Martin/leankit-powershell/releases/latest) [![GitHub license](https://img.shields.io/github/license/Sam-Martin/leankit-powershell.svg)](LICENSE) ![Test Coverage](https://img.shields.io/badge/coverage-83%25-yellowgreen.svg)  
 This PowerShell module provides a series of cmdlets for interacting with the [LeanKit REST API](https://support.leankit.com/hc/en-us/sections/200668393-LeanKit-API-Application-Programming-Interface-), performed by wrapping `Invoke-RestMethod` for the API calls.  
 **IMPORTANT:** Neither this module, nor its creator are in any way affiliated with LeanKit, or LeanKit Inc.
 

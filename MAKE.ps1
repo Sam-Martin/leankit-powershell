@@ -65,7 +65,7 @@ $PackageFilePatternExclusions = @(
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-$Version = "0.1.4"
+$Version = "0.1.5"
 $ModuleName = "PSLeanKit"
 $PackageName = "$ModuleName-v$($version).zip";
 
