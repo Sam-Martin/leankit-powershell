@@ -2,17 +2,35 @@ function Get-LeanKitBoard{
     [CmdletBinding()]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
+        # ID of the board we want to get
         [parameter(mandatory=$true)]
         [int]$BoardID
     )
 
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth | Out-Null
+    # Try and get defaults and break out of the function with a null value if we can't
+    if(!($private:LeanKitAccount = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters)){
+        return;
     }
     
-    [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Boards/$private:boardID/"
+    # Call out to LeanKit to get the data
+    [string]$private:uri = $private:LeanKitAccount.URL + "/Kanban/Api/Boards/$private:boardID/"
+    $private:Board = $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitAccount.Credential).ReplyData
 
-    $private:Board = $(Invoke-RestMethod -Uri $private:uri  -Credential $global:LeanKitCreds).ReplyData
+    #Debug 
+    $global:Board = $private:Board.clone()
 
     # Add the custom type to each card to enable a default view
     $private:Board | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Board")}
@@ -38,16 +56,30 @@ function Get-LeanKitBoard{
 #>
 
 function Find-LeanKitBoard{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Credentials' )]
     [OutputType([array])]
-    param()
+    param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName
+    )
 
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth | Out-Null
+    # Try and get defaults and break out of the function with a null value if we can't
+    if(!($private:LeanKitAccount = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters)){
+        return;
     }
 
-    [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Boards/"
-    return $(Invoke-RestMethod -Uri $private:uri  -Credential $global:LeanKitCreds).ReplyData
+    [string]$private:uri = $private:LeanKitAccount.URL + "/Kanban/Api/Boards/"
+    return $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitAccount.credential).ReplyData
 }
 
 <#
@@ -58,13 +90,34 @@ function Get-LeanKitCardsInBoard{
     [CmdletBinding()]
     [OutputType([array])]
     param(
+         # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+        
         # ID of the board to fetch cards from
         [parameter(mandatory=$true)]
         [int]$BoardID
     )
 
-    $private:Board = Get-LeanKitBoard -BoardID $private:BoardID
+    # Pass any common parameters on to the superordinate cmdlet
+    $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    
+    # Get the board
+    $private:Params.BoardID = $private:BoardID;
+    $private:Board = Get-LeanKitBoard @params
+
+    # Gather all the cards from the board
     $private:Cards = @($private:Board.Lanes.cards) + @($private:Board.Archive) + @($private:Board.Backlog.Cards);
+    
     # Add the custom type to each card to enable a default view
     $private:Cards | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Card")}
 
