@@ -1,5 +1,5 @@
 function Get-LeanKitBoard{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
         # URL of the leankit account
@@ -80,7 +80,7 @@ function Find-LeanKitBoard{
     Gets all cards in a given board
 #>
 function Get-LeanKitCardsInBoard{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
          # URL of the leankit account

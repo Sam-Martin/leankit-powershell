@@ -74,24 +74,16 @@ function New-LeanKitCard{
         [parameter(mandatory=$false)]
         [int[]]$AssignedUserIDs=@()
     )
-    return @{
-        LaneID=$private:LaneID
-        Title=$private:Title
-        Description=$private:Description
-        TypeID=$private:TypeID
-        Priority=$private:Priority
-        IsBlocked=$private:IsBlocked
-        BlockReason=$private:BlockReason
-        Index=$private:Index
-        StartDate=$private:StartDate
-        DueDate=$private:DueDate
-        ExternalSystemName=$private:ExternalSystemName
-        ExternalSystemUrl=$private:ExternalSystemUrl
-        Tags=$private:Tags
-        ClassOfServiceID=$private:ClassOfServiceID
-        ExternalCardID=$private:ExternalCardID
-        AssignedUserIDs=$private:AssignedUserIDs
+    $private:LeanKitCard = @{}
+
+    $private:ValidLeanKitCardProperties = @('LaneID','Title','Description','TypeID','Priority','IsBlocked','BlockReason','Index',
+        'StartDate','DueDate','ExternalSystemName','ExternalSystemUrl','Tags','ClassOfServiceID','ExternalCardID','AssignedUserIDs')
+
+    foreach($private:LeanKitCardProperty in $PsBoundParameters.Keys | ?{$private:ValidLeanKitCardProperties -contains $_}){
+        $private:LeanKitCard.$private:LeanKitCardProperty = $PsBoundParameters.$private:LeanKitCardProperty
     }
+
+    return $private:LeanKitCard
 }
 
 <#
@@ -186,34 +178,28 @@ function Add-LeanKitCard{
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
+        [string]$WipOverrideComment="Created programatically by PSLeanKit"
     )
 
-    $private:Card = New-LeanKitCard `
-        -LaneID  $private:LaneID `
-        -Title  $private:Title `
-        -Description  $private:Description `
-        -TypeID  $private:TypeID `
-        -Priority  $private:Priority `
-        -IsBlocked  $private:IsBlocked `
-        -BlockReason  $private:BlockReason `
-        -Index  $private:Index `
-        -StartDate  $private:StartDate `
-        -DueDate  $private:DueDate `
-        -ExternalSystemName  $private:ExternalSystemName `
-        -ExternalSystemUrl  $private:ExternalSystemUrl `
-        -Tags  $private:Tags `
-        -ClassOfServiceID  $private:ClassOfServiceID `
-        -ExternalCardID  $private:ExternalCardID `
-        -AssignedUserIDs  $private:AssignedUserIDs
+    $private:Params = @{}
+
+    $private:ValidLeanKitCardProperties = @('LaneID','Title','Description','TypeID','Priority','IsBlocked','BlockReason','Index',
+        'StartDate','DueDate','ExternalSystemName','ExternalSystemUrl','Tags','ClassOfServiceID','ExternalCardID','AssignedUserIDs')
+
+    foreach($private:LeanKitCardProperty in $PsBoundParameters.Keys | ?{$private:ValidLeanKitCardProperties -contains $_}){
+        $private:Params.$private:LeanKitCardProperty = $PsBoundParameters.$private:LeanKitCardProperty
+    }
+
+    $private:Card = New-LeanKitCard @private:params
+        
 
     # Pass any common parameters on to the superordinate cmdlet
     $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
     if($ProfileName){$private:Params.ProfileName = $ProfileName}
-
+    $global:AddLeanKitCardParams = $private:params
     $private:Params.boardID = $private:BoardID 
     $private:Params.Cards = @($private:Card)
-    $private:Params.WipOverrideComment = $private:UserWipOverrideComment
+    $private:Params.WipOverrideComment = $private:WipOverrideComment
     return Add-LeanKitCards @private:params
 }
 
@@ -309,7 +295,6 @@ function Get-LeanKitCard {
     $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
     [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/GetCard/$private:CardID"
-    Write-Verbose $private:uri #debug
     return $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitProfile.Credential).ReplyData
 }
 
@@ -407,7 +392,7 @@ function Update-LeanKitCard{
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
+        [string]$WipOverrideComment="Created programatically by PSLeanKit"
     )
    
     # Pass any common parameters on to the superordinate cmdlet
@@ -433,7 +418,7 @@ function Update-LeanKitCard{
     $private:Params = $private:LeanKitProfile.clone();
     $private:Params.BoardID = $private:BoardID 
     $private:Params.Cards = @($private:CardHashTable) 
-    $private:Params.UserWipOverrideComment = $private:UserWipOverrideComment
+    $private:Params.WipOverrideComment = $private:WipOverrideComment
     return Update-LeanKitCards @private:Params
 }
 
@@ -476,7 +461,7 @@ function Update-LeanKitCards{
 
         # A message to provide in case we override a lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Updated by PSLeankit automatically"
+        [string]$WipOverrideComment="Updated by PSLeankit automatically"
     )
 
     # Check for a default profile and merge the explicit creds/url with it
@@ -492,7 +477,7 @@ function Update-LeanKitCards{
     }
 
     # Format the URL and submit the request
-    [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/UpdateCards?wipOverrideComment=$private:UserWipOverrideComment"
+    [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/UpdateCards?wipOverrideComment=$private:WipOverrideComment"
     $private:result = Invoke-RestMethod -Uri $private:uri -Credential $private:LeanKitProfile.Credential -Method Post -Body $(ConvertTo-Json $private:cards) -ContentType "application/json" 
     
     # Check the request succeeded

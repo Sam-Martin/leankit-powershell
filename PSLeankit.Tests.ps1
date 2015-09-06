@@ -20,7 +20,7 @@ if(Test-Path $DefaultsFile){
 Remove-Module PSLeanKit -ErrorAction SilentlyContinue
 Import-Module $here\PSLeanKit.psd1
     
-
+    
 Describe "LeanKit-Module Using Explicit Credentials" {
     
     It "Get-LeanKitProfile returns null when provieded with an invalid profilename" {
@@ -63,7 +63,7 @@ Describe "LeanKit-Module Using Explicit Credentials" {
             AssignedUserIDs =  ($script:LeanKitBoard.BoardUsers | Get-Random).Id
         }
 
-
+        $global:params = $private:params
         # Add a card!
         $script:AddCardResult =  Add-LeanKitCard @private:params
 
@@ -83,7 +83,7 @@ Describe "LeanKit-Module Using Explicit Credentials" {
         $script:CardID = $AddCardResult.Id;
     }
     
-    It "Get-Card works" {
+    It "Get-LeanKitCard works" {
         $private:params = @{
             BoardID = $script:LeanKitBoard.ID 
             CardID = $script:CardID 
@@ -213,7 +213,7 @@ Describe "LeanKit-Module Using Named Profile Values" {
         $script:CardID = $AddCardResult.Id;
     }
     
-    It "Get-Card works" {
+    It "Get-LeanKitCard works" {
         $private:params = @{
             BoardID = $script:LeanKitBoard.ID 
             CardID = $script:CardID 
@@ -275,13 +275,116 @@ Describe "LeanKit-Module Using Named Profile Values" {
         Remove-LeankitProfile -profilename $script:ProfileName -confirm:$false | Should be $true
     }
     
-    <#  These are deprecated and will overwrite your default credentials. Uncomment if you really want to test
+   
+    
+} 
+
+Describe "LeanKit-Module Using Default Profile" {
+    It "Add-LeanKitProfile works" {
+        $private:ProfileResults = Add-LeanKitProfile -url $defaults.URL -credential $defaults.Credential -confirm:$false
+        $private:ProfileResults.url | Should be $defaults.URL
+        if(!$private:ProfileResults){
+            throw "Are you sure you want to run this using the default profile?!"
+        }
+    }
+
+     It "Get-LeanKitProfile a value when provided with a valid profilename" {
+        
+        (Get-LeanKitProfile).URL -eq  $defaults.URL | Should be $true
+    }
+    
+    It "Get-LeanKitDateFormat works"{
+        ($global:DateFormat = Get-LeanKitDateFormat) | Should be $true
+        
+    }
+    
+    It "Find-LeanKitBoard works"{
+        $script:LeanKitBoard = Find-LeanKitBoard | Get-Random
+        $script:LeanKitBoard.ID -gt 0 | Should be $true
+    }
+    
+    It "Get-LeanKitBoard works" {
+        ($script:LeanKitBoard = Get-LeanKitBoard -BoardID $script:LeanKitBoard.ID).Id | Should be $script:LeanKitBoard.ID
+    } 
+
+    It "Add-LeanKitCard works (and by extension Add-LeanKitCards and New-LeanKitCard)" {
+
+
+        $private:params = @{
+            BoardID = $script:LeanKitBoard.ID
+            LaneID =  $script:LeanKitBoard.DefaultDropLaneID 
+            Title =  "Test Card" 
+            Description =  "Don't worry, only testing" 
+            TypeID =  ($script:LeanKitBoard.CardTypes | Get-Random).Id
+        }
+
+
+        # Add a card!
+        $script:AddCardResult =  Add-LeanKitCard @private:params
+
+        # Check the results
+        $AddCardResult.Title | Should be $private:params.Title
+        $AddCardResult.LaneID | Should be $private:params.LaneID
+        $AddCardResult.Description | Should be $private:params.Description
+
+
+        # Save the card ID for our next test
+        $script:CardID = $AddCardResult.Id;
+    }
+    
+    It "Get-LeanKitCard works" {
+        $private:params = @{
+            BoardID = $script:LeanKitBoard.ID 
+            CardID = $script:CardID 
+        }
+        (Get-LeanKitCard @private:params).id | Should be $script:CardID
+    }
+   
+    It "Update-LeanKitCard (and by extension Update-LeanKitCards) works" {
+       
+       $private:params = @{
+            CardID = $script:CardID
+            BoardID = $script:LeanKitBoard.ID
+            LaneID =  $script:LeanKitBoard.DefaultDropLaneID 
+            Title =  "Test Card  - Updated" 
+            Description =  "Don't worry, only testing - Updated" 
+            TypeID =  ($script:LeanKitBoard.CardTypes | Get-Random).Id
+        }
+        $script:UpdateCardResult = Update-LeanKitCard @private:params
+            
+
+        $script:UpdateCardResult.UpdatedCardsCount | Should be 1
+        
+        # Fetch the card details and check it more fully
+        $script:UpdatedCard =  Get-LeanKitCard -CardID $script:CardID -boardID $script:LeanKitBoard.ID
+        $script:UpdatedCard.Title | Should be $private:params.Title
+        $script:UpdatedCard.LaneID | Should be $private:params.LaneID
+        $script:UpdatedCard.Description | Should be $private:params.Description
+
+    }
+
+    
+    It "Remove-LeanKitCard works" {
+        
+        # Weirdly DeletedCardsCount is the board version rather the number of the cards deleted, so don't be surprised if it's a large number
+        (Remove-LeanKitCard -BoardID $script:LeanKitBoard.ID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
+    }
+
+    It "Get-LeanKitCardsInBoard works"{
+        (Get-LeanKitCardsInBoard -BoardID $script:LeanKitBoard.ID).Count -gt 0 | Should be $true
+    }
+    
+    It "Remove-LeanKitProfile works"{
+        Remove-LeankitProfile -confirm:$false | Should be $true
+    } 
+    
     It "Set-LeanKitAuth works" {
         Set-LeanKitAuth -url $defaults.URL -credential $defaults.Credential | Should be $true
     }
         
     It "Remove-LeanKitAuth works (just an alias of Remove-LeanKitProfile now)"{
         Remove-LeanKitAuth | Should be $true
-    } #>
+    } 
+    
     
 }

@@ -8,6 +8,7 @@
 }
 
 function Get-LeanKitDateFormat{
+    [CmdletBinding(DefaultParameterSetName='Profile')]
      param(
         # URL of the leankit account
         [Parameter(ParameterSetName='Credential')]
@@ -25,6 +26,7 @@ function Get-LeanKitDateFormat{
 
     # Pass any common parameters on to the superordinate cmdlet
     $private:BaseParams = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters
+    if($private:BaseParams.Credential -and $private:BaseParams.ProfileName){$private:BaseParams.remove('ProfileName')}
     $private:BaseParams.ErrorAction = 'Stop'
     
     # Get a board from the list
@@ -56,17 +58,17 @@ function Add-LeanKitProfile{
     [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
     param(
         [parameter(mandatory=$true)]
-        [string]$url,
+        [string]$URL,
         
         [parameter(mandatory=$true)]
         [Alias("credentials")] 
-        [System.Management.Automation.PSCredential]$credential,
+        [System.Management.Automation.PSCredential]$Credential,
 
         # Optional profile name to allow you to store defaults for multiple leankit organisations
-        [string]$profilename = 'default',
+        [string]$ProfileName = 'default',
         
         # Optional parameter specifying the folder where profiles are stored
-        $private:ProfileLocation = "$env:USERPROFILE\PSLeankit\"
+        [string]$ProfileLocation = "$env:USERPROFILE\PSLeankit\"
     )
 
     # Strip http/s from the URL if it's provided
@@ -110,7 +112,7 @@ function Remove-LeanKitProfile{
     [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
     param(
         # Optional profile name to allow you to store defaults for multiple leankit organisations
-        [string]$profilename = 'default',
+        [string]$ProfileName = 'default',
         
         # Optional parameter specifying the folder where profiles are stored
         $private:ProfileLocation = "$env:USERPROFILE\PSLeankit\"
@@ -201,8 +203,11 @@ function Get-LeanKitProfile{
     [CmdletBinding()]
     param(
         # Name of the profile we wish to load
-        [string]$ProfileName = 'default'
+        [string]$ProfileName
     )
+
+    # Set a ProfileName if it's null
+    if(!$ProfileName){$ProfileName = 'Default'}
 
     # Check for the existence of a matching profile for this computer and load it if we find it
     $private:ProfilePath = "$env:USERPROFILE\PSLeankit\$ProfileName-$env:COMPUTERNAME.json"
