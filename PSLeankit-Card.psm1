@@ -209,11 +209,11 @@ function Add-LeanKitCard{
 
     # Pass any common parameters on to the superordinate cmdlet
     $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:Params.ProfileName = $ProfileName}
 
     $private:Params.boardID = $private:BoardID 
-    $private:Params.cards = @($private:Card)
+    $private:Params.Cards = @($private:Card)
     $private:Params.WipOverrideComment = $private:UserWipOverrideComment
-    $global:testgoat2 = $private:params;
     return Add-LeanKitCards @private:params
 }
 
@@ -255,7 +255,7 @@ function Add-LeanKitCards{
     )
 
     # Try and get defaults and break out of the function with a null value if we can't
-    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
     # Loop through and convert each card's date to the correct format
     $Private:LeanKitDateFormat = Get-LeanKitDateFormat @private:LeanKitProfile
@@ -306,7 +306,7 @@ function Get-LeanKitCard {
     )
 
     # Check for a default profile and merge the explicit creds/url with it
-    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
     [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/GetCard/$private:CardID"
     Write-Verbose $private:uri #debug
@@ -412,6 +412,7 @@ function Update-LeanKitCard{
    
     # Pass any common parameters on to the superordinate cmdlet
     $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:LeanKitProfile.ProfileName = $ProfileName}
     
     # Fetch the card and pipe it's existing values into a hashtable for manipulation 
     $private:CardHashTable = @{};
@@ -479,7 +480,7 @@ function Update-LeanKitCards{
     )
 
     # Check for a default profile and merge the explicit creds/url with it
-    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
     # Loop through and convert each card's date to the correct format
     $Private:LeanKitDateFormat = Get-LeanKitDateFormat @private:LeanKitProfile
@@ -532,6 +533,7 @@ function Remove-LeanKitCard {
 
     # Pass any common parameters on to the superordinate cmdlet
     $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:Params.ProfileName = $ProfileName}
 
     $private:Params.BoardID = $private:BoardID 
     $private:Params.CardIDs = @($private:CardID)
@@ -566,7 +568,7 @@ function Remove-LeanKitCards {
     )
 
     # Check for a default profile and merge the explicit creds/url with it
-    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
     [string]$uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/DeleteCards/"
     $result = Invoke-RestMethod -Uri $uri  -Credential $private:LeanKitProfile.Credential -Method Post -Body $(ConvertTo-Json $private:CardIDs) -ContentType "application/json" 

@@ -21,7 +21,7 @@ function Get-LeanKitBoard{
     )
 
     # Check for a default profile and merge the explicit creds/url with it
-    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
     
     # Call out to LeanKit to get the data
     [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Boards/$private:boardID/"
@@ -69,7 +69,7 @@ function Find-LeanKitBoard{
     )
 
     # Check for a default profile and merge the explicit creds/url with it
-    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
     [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Boards/"
     return $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitProfile.credential).ReplyData
@@ -103,6 +103,7 @@ function Get-LeanKitCardsInBoard{
 
     # Pass any common parameters on to the superordinate cmdlet
     $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:Params.ProfileName = $ProfileName}
     
     # Get the board
     $private:Params.BoardID = $private:BoardID;

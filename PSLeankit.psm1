@@ -50,11 +50,8 @@ function Get-LeanKitDateFormat{
         [string]$ProfileName
     )
 
-     # Try and get defaults and break out of the function with a null value if we can't
-    if(!($private:BaseParams = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters)){
-        return;
-    }
-
+    # Pass any common parameters on to the superordinate cmdlet
+    $private:BaseParams = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters
     $private:BaseParams.ErrorAction = 'Stop'
     
     # Get a board from the list
@@ -67,7 +64,9 @@ function Get-LeanKitDateFormat{
     $private:Params.BoardID = $private:Board.Id
     $private:Board = Get-LeanKitBoard @private:Params
 
-    # Find the DateFormat from teh user
+    $global:board = $private:Board
+
+    # Find the DateFormat from the user
     if(!($private:LeanKitDateFormat = ($private:Board.BoardUsers | ?{$_.EmailAddress -eq $private:BaseParams.Credential.UserName}).DateFormat)){
         Write-Error "Failed to get DateFormat for some reason";
     }
@@ -87,8 +86,8 @@ function Remove-LeanKitAuth{
     return $true;
 }
 
-function Initialize-LeanKitDefaults{
-    [CmdletBinding()]
+function Add-LeanKitProfile{
+    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
     param(
         [parameter(mandatory=$true)]
         [string]$url,
@@ -98,30 +97,46 @@ function Initialize-LeanKitDefaults{
         [System.Management.Automation.PSCredential]$credential,
 
         # Optional profile name to allow you to store defaults for multiple leankit organisations
-        [string]$profilename = 'default'
+        [string]$profilename = 'default',
+        
+        # Optional parameter specifying the folder where profiles are stored
+        $private:ProfileLocation = "$env:USERPROFILE\PSLeankit\"
     )
 
-    Write-Warning "Set-LeanKitAuth is deprecated and will be removed in a later version. Please use Initialize-LeanKitDefaults"
+    # Strip http/s from the URL if it's provided
+    $private:url = $url -replace 'http[s]?://', ''
 
-    $global:LeanKitURL = 'https://' + $url;
-    $global:LeanKitCreds = $credentials
+    # Build the leankit Profile
+    $private:Configuration = @{
+        "url" = $private:url
+        "credential" = @{
+            "username" = $private:credential.UserName
+            "password" = $private:credential.Password | ConvertFrom-SecureString
+        }
+    } 
+
+    # Create the profile folder if need be
+    New-Item $private:ProfileLocation -ItemType container -ErrorAction SilentlyContinue
     
-    # Fetch the date format for the user (API doesn't use ISO standard date formats :( )
-    try{
-        $private:Board = Find-LeanKitBoard -ErrorAction Stop | Get-Random
-        $private:Board = Get-LeanKitBoard -BoardID $private:Board.Id -ErrorAction Stop
-        $global:LeanKitDateFormat= ($Board.BoardUsers | ?{$_.EmailAddress -eq $global:LeanKitCreds.UserName}).DateFormat
-    }catch{
-        Write-Error $_.Exception.Message;
-        return $false;
+    $private:ProfilePath = "$env:USERPROFILE\PSLeankit\$ProfileName-$env:COMPUTERNAME.json"
+    
+    # Check for the existence of a matching profile for this computer and confirm if we find it
+    if((Test-Path $private:ProfilePath) -and !($pscmdlet.ShouldProcess($private:ProfilePath, "Overwrite"))){
+        
+        # User opted not to overwrite
+        return;   
     }
 
-    return $true;
+    Set-Content -Path $private:ProfilePath -Value $($private:Configuration| ConvertTo-Json)
+
+    return $private:Configuration
+
 }
+
 
 <#
     .SYNOPSIS
-        Helper functin to merge explicitly defined params with profile defaults.
+        Helper function to merge explicitly defined params with profile defaults.
 
 #>
 function Merge-LeanKitProfileDataWithExplicitParams{
@@ -140,6 +155,14 @@ function Merge-LeanKitProfileDataWithExplicitParams{
 
     # Ensure $ProfileData is a hashtable rather than $null
     if(!$ProfileData){$ProfileData = @{}}
+    
+    # Ensure $ProfileData is a hashtable
+    if($ProfileData.GetType().name -ne "HashTable"){
+        $Private:ProfileHashTable = @{}
+        $private:ProfileData | Get-Member | ?{$_.MemberType -eq "NoteProperty"} | %{$private:ProfileHashTable.add($_.name, $private:ProfileData.$($_.name))}
+        $private:ProfileData = $Private:ProfileHashTable
+    }
+    
 
     # We're only interested in a few params to merge into the profile
     $private:ParamsToSearchFor = @("URL", "Credential")
@@ -153,7 +176,7 @@ function Merge-LeanKitProfileDataWithExplicitParams{
     }
 
     # Do we want to validate if we have a full dataset?
-    if(!$ErrorOnIncompleteResultantData){
+    if(!$ErrorOnIncompleteResultantData.IsPresent){
         return $Private:ProfileData
     }
 
