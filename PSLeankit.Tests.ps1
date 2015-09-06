@@ -22,12 +22,6 @@ Import-Module $here\PSLeanKit.psd1
     
 
 Describe "LeanKit-Module Using Explicit Credentials" {
-    <#
-    # While deprecated we still want to see if it works
-    It "Set-LeanKitAuth works" {
-        Set-LeanKitAuth -url $defaults.URL -credential $defaults.Credential | Should be $true
-    }
-   #>
     
     It "Get-LeanKitProfile returns null when provieded with an invalid profilename" {
         
@@ -148,11 +142,7 @@ Describe "LeanKit-Module Using Explicit Credentials" {
     It "Get-LeanKitCardsInBoard works"{
         (Get-LeanKitCardsInBoard -BoardID $script:LeanKitBoard.ID -url $defaults.URL -credential $defaults.Credential).Count -gt 0 | Should be $true
     }
-    <#
-    It "Remove-LeanKitAuth works"{
-        Remove-LeanKitAuth | Should be $true
-    }
-    #>
+
 }
 
 
@@ -280,9 +270,18 @@ Describe "LeanKit-Module Using Named Profile Values" {
     It "Get-LeanKitCardsInBoard works"{
         (Get-LeanKitCardsInBoard -BoardID $script:LeanKitBoard.ID -ProfileName $script:ProfileName).Count -gt 0 | Should be $true
     }
-    <#
-    It "Remove-LeanKitAuth works"{
-        Remove-LeanKitAuth | Should be $true
+
+    It "Remove-LeanKitProfile works"{
+        Remove-LeankitProfile -profilename $script:ProfileName -confirm:$false | Should be $true
     }
-    #>
+    
+    <#  These are deprecated and will overwrite your default credentials. Uncomment if you really want to test
+    It "Set-LeanKitAuth works" {
+        Set-LeanKitAuth -url $defaults.URL -credential $defaults.Credential | Should be $true
+    }
+        
+    It "Remove-LeanKitAuth works (just an alias of Remove-LeanKitProfile now)"{
+        Remove-LeanKitAuth | Should be $true
+    } #>
+    
 }

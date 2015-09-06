@@ -1,37 +1,10 @@
 ﻿function Test-LeanKitAuthIsSet{
-    if($Global:LeanKitCreds){
+    Write-Warning "Test-LeankitAuthIsSet is deprecated and now checks the default profile, please use Get-LeanKitProfile instead."
+    if(Get-LeanKitProfile){
         return $true;
     }else{
         return $false;
     }   
-}
-
-function Set-LeanKitAuth{
-    [CmdletBinding()]
-    param(
-        [parameter(mandatory=$true)]
-        [string]$url,
-        
-        [parameter(mandatory=$true)]
-        [System.Management.Automation.PSCredential]$credentials
-    )
-
-    Write-Warning "Set-LeanKitAuth is deprecated and will be removed in a later version. Please use Initialize-LeanKitDefaults"
-
-    $global:LeanKitURL = 'https://' + $url;
-    $global:LeanKitCreds = $credential
-    
-    # Fetch the date format for the user (API doesn't use ISO standard date formats :( )
-    try{
-        $private:Board = Find-LeanKitBoard -URL $url -credential $credential -ErrorAction Stop | Get-Random
-        $private:Board = Get-LeanKitBoard -URL $url -credential $credential -BoardID $private:Board.Id -ErrorAction Stop
-        $global:LeanKitDateFormat= ($Board.BoardUsers | ?{$_.EmailAddress -eq $global:LeanKitCreds.UserName}).DateFormat
-    }catch{
-        Write-Error $_.Exception.Message;
-        return $false;
-    }
-
-    return $true;
 }
 
 function Get-LeanKitDateFormat{
@@ -75,18 +48,11 @@ function Get-LeanKitDateFormat{
 }
 
 <#
-.SYNOPSIS
-    Cleans up the variables containing your authentication information from your PowerShell session
+    .SYNOPSIS
+        Creates a file in USERPROFILE\PSLeanKit containing the credentials pass
 #>
-function Remove-LeanKitAuth{
-    [CmdletBinding()]
-    param()
-    Remove-Variable -Name LeanKitURL -Scope Global
-    Remove-Variable -Name LeanKitCreds -Scope Global
-    return $true;
-}
-
 function Add-LeanKitProfile{
+    [Alias('Set-LeankitAuth')]
     [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
     param(
         [parameter(mandatory=$true)]
@@ -133,6 +99,39 @@ function Add-LeanKitProfile{
 
 }
 
+
+<#
+    .SYNOPSIS
+        Deletes the stored credentials in a LeanKitProfile
+#>
+
+function Remove-LeanKitProfile{
+    [Alias('Remove-LeankitAuth')]
+    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
+    param(
+        # Optional profile name to allow you to store defaults for multiple leankit organisations
+        [string]$profilename = 'default',
+        
+        # Optional parameter specifying the folder where profiles are stored
+        $private:ProfileLocation = "$env:USERPROFILE\PSLeankit\"
+    )
+    $private:ProfilePath = "$env:USERPROFILE\PSLeankit\$ProfileName-$env:COMPUTERNAME.json"
+    
+    if(!(Test-Path $private:ProfilePath)){
+        Write-Error "Profile does not exist at $private:ProfilePath"
+        return $false;
+    }
+
+    # Get confirmation 
+    if($pscmdlet.ShouldProcess($private:ProfilePath, "Delete")){
+        
+        Remove-Item $private:ProfilePath -Force
+        return $true
+    }else{
+        Write-Verbose "User decided not to delete"
+        return $false
+    }
+}
 
 <#
     .SYNOPSIS
