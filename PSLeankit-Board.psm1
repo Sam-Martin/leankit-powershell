@@ -20,17 +20,12 @@ function Get-LeanKitBoard{
         [int]$BoardID
     )
 
-    # Try and get defaults and break out of the function with a null value if we can't
-    if(!($private:LeanKitAccount = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters)){
-        return;
-    }
+    # Check for a default profile and merge the explicit creds/url with it
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
     
     # Call out to LeanKit to get the data
-    [string]$private:uri = $private:LeanKitAccount.URL + "/Kanban/Api/Boards/$private:boardID/"
-    $private:Board = $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitAccount.Credential).ReplyData
-
-    #Debug 
-    $global:Board = $private:Board.clone()
+    [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Boards/$private:boardID/"
+    $private:Board = $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitProfile.Credential).ReplyData
 
     # Add the custom type to each card to enable a default view
     $private:Board | %{$_.psobject.TypeNames.Insert(0, "PSLeanKit.Board")}
@@ -56,7 +51,7 @@ function Get-LeanKitBoard{
 #>
 
 function Find-LeanKitBoard{
-    [CmdletBinding(DefaultParameterSetName='Credentials' )]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
         # URL of the leankit account
@@ -73,13 +68,11 @@ function Find-LeanKitBoard{
         [string]$ProfileName
     )
 
-    # Try and get defaults and break out of the function with a null value if we can't
-    if(!($private:LeanKitAccount = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters)){
-        return;
-    }
+    # Check for a default profile and merge the explicit creds/url with it
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
-    [string]$private:uri = $private:LeanKitAccount.URL + "/Kanban/Api/Boards/"
-    return $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitAccount.credential).ReplyData
+    [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Boards/"
+    return $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitProfile.credential).ReplyData
 }
 
 <#

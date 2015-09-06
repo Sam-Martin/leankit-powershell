@@ -34,6 +34,10 @@ Describe "LeanKit-Module Using Explicit Profile Values" {
         (Get-LeanKitProfile -ProfileName "65465798721asda213").URL -eq $null | Should be $true
     }
     
+    It "Get-LeanKitDateFormat works"{
+        $global:DateFormat = Get-LeanKitDateFormat -url $defaults.URL -credential $defaults.Credential
+    }
+
     It "Find-LeanKitBoard works"{
         $script:LeanKitBoard = Find-LeanKitBoard -url $defaults.URL -credential $defaults.Credential | Get-Random
         $script:LeanKitBoard.ID -gt 0 | Should be $true
@@ -43,21 +47,18 @@ Describe "LeanKit-Module Using Explicit Profile Values" {
         ($script:LeanKitBoard = Get-LeanKitBoard -BoardID $script:LeanKitBoard.ID -url $defaults.URL -credential $defaults.Credential).Id | Should be $script:LeanKitBoard.ID
     }
     
-    <#
+    
     It "Add-LeanKitCard works (and by extension Add-LeanKitCards and New-LeanKitCard)" {
 
-        # Pick random values for this test
-        $RandomLane = $script:LeanKitBoard.DefaultDropLaneID
-        $RandomCardType = ($script:LeanKitBoard.CardTypes | Get-Random).Id
-        $RandomUser = ($script:LeanKitBoard.BoardUsers | Get-Random).Id
-        $RandomClassOfService = ($script:LeanKitBoard.ClassesOfService | Get-Random).Id
 
         $private:params = @{
-            BoardID = $defaults.BoardID 
-            LaneID =  $RandomLane 
+            url = $defaults.URL 
+            credential = $defaults.Credential
+            BoardID = $script:LeanKitBoard.ID
+            LaneID =  $script:LeanKitBoard.DefaultDropLaneID 
             Title =  "Test Card" 
             Description =  "Don't worry, only testing" 
-            TypeID =  $RandomCardType 
+            TypeID =  ($script:LeanKitBoard.CardTypes | Get-Random).Id
             Priority =  1 
             IsBlocked =  $true 
             BlockReason =  "I'm waiting on a dependency :(" 
@@ -65,7 +66,7 @@ Describe "LeanKit-Module Using Explicit Profile Values" {
             StartDate =  (Get-Date).AddDays(3) 
             DueDate =  (Get-Date).AddDays(7) 
             Tags = "Groovy,Awesome"
-            AssignedUserIDs =  $RandomUser 
+            AssignedUserIDs =  ($script:LeanKitBoard.BoardUsers | Get-Random).Id
         }
 
 
@@ -85,63 +86,69 @@ Describe "LeanKit-Module Using Explicit Profile Values" {
         $AddCardResult.AssignedUserIDs | Should be $private:params.AssignedUserIDs
 
         # Save the card ID for our next test
-        $global:CardID = $AddCardResult.Id;
+        $script:CardID = $AddCardResult.Id;
     }
-    <#
+    
     It "Get-Card works" {
-        (Get-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID).id | Should be $CardID
+        $private:params = @{
+            BoardID = $script:LeanKitBoard.ID 
+            CardID = $script:CardID 
+            url = $defaults.URL 
+            credential = $defaults.Credential
+        }
+        (Get-LeanKitCard @private:params).id | Should be $script:CardID
     }
-
+   
     It "Update-LeanKitCard (and by extension Update-LeanKitCards) works" {
-       # Pick random values for this test
-        $RandomLane = $script:LeanKitBoard.DefaultDropLaneID
-        $RandomCardType = ($script:LeanKitBoard.CardTypes | Get-Random).Id
-        $RandomUser = ($script:LeanKitBoard.BoardUsers | Get-Random).Id
-        $RandomClassOfService = ($script:LeanKitBoard.ClassesOfService | Get-Random).Id
-
-        # Add a card!
-        $script:UpdateCardResult =  Update-LeanKitCard -Verbose `
-            -BoardID $defaults.BoardID `
-            -LaneID  $RandomLane `
-            -CardID $CardID `
-            -Title  "Test Card - Updated" `
-            -Description  "Don't worry, only testing - Updated" `
-            -TypeID  $RandomCardType `
-            -IsBlocked  $false `
-            -BlockReason  "I'm waiting on a dependency :( - Updated" `
-            -Index  0 `
-            -StartDate  (Get-Date).AddDays(2) `
-            -DueDate  (Get-Date).AddDays(8) `
-            -Tags "Groovy,Awesome,Fabulous" `
-            -AssignedUserIDs $RandomUser `
-            -Priority  1 `
+       
+       $private:params = @{
+            url = $defaults.URL 
+            credential = $defaults.Credential
+            CardID = $script:CardID
+            BoardID = $script:LeanKitBoard.ID
+            LaneID =  $script:LeanKitBoard.DefaultDropLaneID 
+            Title =  "Test Card  - Updated" 
+            Description =  "Don't worry, only testing - Updated" 
+            TypeID =  ($script:LeanKitBoard.CardTypes | Get-Random).Id
+            Priority =  2 
+            IsBlocked =  $false 
+            BlockReason =  "I'm waiting on a dependency :(  - Updated" 
+            Index =  0 
+            StartDate =  (Get-Date).AddDays(3) 
+            DueDate =  (Get-Date).AddDays(7) 
+            Tags = "Groovy,Awesome,Fabulous"
+            AssignedUserIDs =  ($script:LeanKitBoard.BoardUsers | Get-Random).Id
+        }
+        $script:UpdateCardResult = Update-LeanKitCard @private:params
             
 
-        $UpdateCardResult.UpdatedCardsCount | Should be 1
-        $global:UpdatedCard =  Get-LeanKitCard -CardID $CardID -boardID $defaults.BoardID
-        $UpdatedCard.Title | Should be "Test Card - Updated"
-        $UpdatedCard.LaneID | Should be $RandomLane
-        $UpdatedCard.Description | Should be "Don't worry, only testing - Updated"
-        $UpdatedCard.TypeID | Should be $RandomCardType
-        $UpdatedCard.Priority | Should be 1
-        $UpdatedCard.IsBlocked | Should be $false
-        $UpdatedCard.BlockReason | Should be "I'm waiting on a dependency :( - Updated"
-        $UpdatedCard.Index | Should be 0
-
-        $UpdatedCard.Tags | Should be "Groovy,Awesome,Fabulous"
-        $UpdatedCard.AssignedUserIDs | Should be @($RandomUser)
+        $script:UpdateCardResult.UpdatedCardsCount | Should be 1
+        
+        # Fetch the card details and check it more fully
+        $script:UpdatedCard =  Get-LeanKitCard -CardID $script:CardID -boardID $script:LeanKitBoard.ID -url $defaults.URL -credential $defaults.Credential
+        $script:UpdatedCard.Title | Should be $private:params.Title
+        $script:UpdatedCard.LaneID | Should be $private:params.LaneID
+        $script:UpdatedCard.Description | Should be $private:params.Description
+        $script:UpdatedCard.TypeID | Should be $private:params.TypeID
+        $script:UpdatedCard.Priority | Should be $private:params.Priority
+        $script:UpdatedCard.IsBlocked | Should be $private:params.IsBlocked
+        $script:UpdatedCard.BlockReason | Should be $private:params.BlockReason
+        $script:UpdatedCard.Index | Should be $private:params.Index
+        $script:UpdatedCard.Tags | Should be $private:params.Tags
+        $script:UpdatedCard.AssignedUserIDs | Should be $private:params.AssignedUserIDs
     }
 
+    
     It "Remove-LeanKitCard works" {
         
         # Weirdly DeletedCardsCount is the board version rather the number of the cards deleted, so don't be surprised if it's a large number
-        (Remove-LeanKitCard -BoardID $defaults.BoardID -CardID $CardID).DeletedCardsCount | Should Match "\d?"
+        (Remove-LeanKitCard -BoardID $script:LeanKitBoard.ID -CardID $CardID -url $defaults.URL -credential $defaults.Credential).DeletedCardsCount | Should Match "\d?"
     }
 
     It "Get-LeanKitCardsInBoard works"{
-        (Get-LeanKitCardsInBoard -BoardID $defaults.BoardID).Count -gt 0 | Should be $true
+        (Get-LeanKitCardsInBoard -BoardID $script:LeanKitBoard.ID -url $defaults.URL -credential $defaults.Credential).Count -gt 0 | Should be $true
     }
-
+    <#
     It "Remove-LeanKitAuth works"{
         Remove-LeanKitAuth | Should be $true
     }

@@ -34,6 +34,47 @@ function Set-LeanKitAuth{
     return $true;
 }
 
+function Get-LeanKitDateFormat{
+     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName
+    )
+
+     # Try and get defaults and break out of the function with a null value if we can't
+    if(!($private:BaseParams = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters)){
+        return;
+    }
+
+    $private:BaseParams.ErrorAction = 'Stop'
+    
+    # Get a board from the list
+    $private:Board = Find-LeanKitBoard @private:BaseParams | Get-Random
+        
+    Write-Verbose "Looking for user in $($private:Board.Id)"
+
+    # Get board details
+    $private:Params = $private:BaseParams.clone();
+    $private:Params.BoardID = $private:Board.Id
+    $private:Board = Get-LeanKitBoard @private:Params
+
+    # Find the DateFormat from teh user
+    if(!($private:LeanKitDateFormat = ($private:Board.BoardUsers | ?{$_.EmailAddress -eq $private:BaseParams.Credential.UserName}).DateFormat)){
+        Write-Error "Failed to get DateFormat for some reason";
+    }
+    return $private:LeanKitDateFormat
+
+}
+
 <#
 .SYNOPSIS
     Cleans up the variables containing your authentication information from your PowerShell session
@@ -113,11 +154,14 @@ function Merge-LeanKitProfileDataWithExplicitParams{
 
     # Do we want to validate if we have a full dataset?
     if(!$ErrorOnIncompleteResultantData){
-        return $ProfileData
+        return $Private:ProfileData
     }
 
     # Generate a list of any missing properties
-    $private:MissingProperties = $private:ParamsToSearchFor.keys | ?{$private:ProfileData -notcontains $_}
+    Write-Verbose "Checking we have all the variables we need to authenticate against the API"
+    $private:MissingProperties = $private:ParamsToSearchFor | ?{$private:ProfileData.Keys -notcontains $_}
+
+    $global:profiledata = $private:ProfileData  #debug
 
     # Throw an error if we have missing properties
     if($private:MissingProperties.Count -gt 0){
@@ -128,7 +172,7 @@ function Merge-LeanKitProfileDataWithExplicitParams{
         return;
     }
 
-    return $ProfileData
+    return $Private:ProfileData
 }
 
 function Get-LeanKitProfile{
