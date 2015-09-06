@@ -4,7 +4,7 @@
 #>
 
 function New-LeanKitCard{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
         
@@ -44,11 +44,11 @@ function New-LeanKitCard{
 
         # Time the card's action will start
         [parameter(mandatory=$false)]
-        [string]$StartDate=0,
+        [datetime]$StartDate=0,
 
         # Time the card's action will be due
         [parameter(mandatory=$false)]
-        [string]$DueDate=0,
+        [datetime]$DueDate=0,
 
         # The name of the external system which the ticket is referencing with "ExternalCardID
         [parameter(mandatory=$false)]
@@ -74,24 +74,16 @@ function New-LeanKitCard{
         [parameter(mandatory=$false)]
         [int[]]$AssignedUserIDs=@()
     )
-    return @{
-        LaneID=$private:LaneID
-        Title=$private:Title
-        Description=$private:Description
-        TypeID=$private:TypeID
-        Priority=$private:Priority
-        IsBlocked=$private:IsBlocked
-        BlockReason=$private:BlockReason
-        Index=$private:Index
-        StartDate=$private:StartDate
-        DueDate=$private:DueDate
-        ExternalSystemName=$private:ExternalSystemName
-        ExternalSystemUrl=$private:ExternalSystemUrl
-        Tags=$private:Tags
-        ClassOfServiceID=$private:ClassOfServiceID
-        ExternalCardID=$private:ExternalCardID
-        AssignedUserIDs=$private:AssignedUserIDs
+    $private:LeanKitCard = @{}
+
+    $private:ValidLeanKitCardProperties = @('LaneID','Title','Description','TypeID','Priority','IsBlocked','BlockReason','Index',
+        'StartDate','DueDate','ExternalSystemName','ExternalSystemUrl','Tags','ClassOfServiceID','ExternalCardID','AssignedUserIDs')
+
+    foreach($private:LeanKitCardProperty in $PsBoundParameters.Keys | ?{$private:ValidLeanKitCardProperties -contains $_}){
+        $private:LeanKitCard.$private:LeanKitCardProperty = $PsBoundParameters.$private:LeanKitCardProperty
     }
+
+    return $private:LeanKitCard
 }
 
 <#
@@ -99,10 +91,22 @@ function New-LeanKitCard{
     Adds a leankit card to a board
 #>
 function Add-LeanKitCard{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
         
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
         # ID of the board in which to update the card
         [parameter(mandatory=$true)]
         [int]$BoardID,
@@ -174,44 +178,57 @@ function Add-LeanKitCard{
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
+        [string]$WipOverrideComment="Created programatically by PSLeanKit"
     )
 
-    $private:StartDate = if($private:StartDate){(Get-Date $private:StartDate -format $global:LeanKitDateFormat)}else{""}
-    $private:DueDate = if($private:DueDate ){Get-Date $private:DueDate  -format $global:LeanKitDateFormat}else{""}
+    $private:Params = @{}
 
-    $private:Card = New-LeanKitCard `
-        -LaneID  $private:LaneID `
-        -Title  $private:Title `
-        -Description  $private:Description `
-        -TypeID  $private:TypeID `
-        -Priority  $private:Priority `
-        -IsBlocked  $private:IsBlocked `
-        -BlockReason  $private:BlockReason `
-        -Index  $private:Index `
-        -StartDate  $private:StartDate `
-        -DueDate  $private:DueDate `
-        -ExternalSystemName  $private:ExternalSystemName `
-        -ExternalSystemUrl  $private:ExternalSystemUrl `
-        -Tags  $private:Tags `
-        -ClassOfServiceID  $private:ClassOfServiceID `
-        -ExternalCardID  $private:ExternalCardID `
-        -AssignedUserIDs  $private:AssignedUserIDs
+    $private:ValidLeanKitCardProperties = @('LaneID','Title','Description','TypeID','Priority','IsBlocked','BlockReason','Index',
+        'StartDate','DueDate','ExternalSystemName','ExternalSystemUrl','Tags','ClassOfServiceID','ExternalCardID','AssignedUserIDs')
 
+    foreach($private:LeanKitCardProperty in $PsBoundParameters.Keys | ?{$private:ValidLeanKitCardProperties -contains $_}){
+        $private:Params.$private:LeanKitCardProperty = $PsBoundParameters.$private:LeanKitCardProperty
+    }
 
-    return Add-LeanKitCards -boardID $private:BoardID -cards @($private:Card) -WipOverrideComment $private:UserWipOverrideComment
+    $private:Card = New-LeanKitCard @private:params
+        
+
+    # Pass any common parameters on to the superordinate cmdlet
+    $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:Params.ProfileName = $ProfileName}
+    $global:AddLeanKitCardParams = $private:params
+    $private:Params.boardID = $private:BoardID 
+    $private:Params.Cards = @($private:Card)
+    $private:Params.WipOverrideComment = $private:WipOverrideComment
+    return Add-LeanKitCards @private:params
 }
 
 function Add-LeanKitCards{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
+        # ID of the board
         [parameter(mandatory=$true)]
         [int]$boardID,
 
+        # A reason for overridding the WorkInProgress Limit
         [parameter(mandatory=$false)]
         [string]$WipOverrideComment='',
 
+        # Array of card hashtables created from New-LeanKitCard
         [parameter(mandatory=$true)]
         [ValidateScript({
             if($_.length -gt 100){
@@ -223,12 +240,20 @@ function Add-LeanKitCards{
         [hashtable[]]$cards
     )
 
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth | Out-Null
+    # Try and get defaults and break out of the function with a null value if we can't
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+
+    # Loop through and convert each card's date to the correct format
+    $Private:LeanKitDateFormat = Get-LeanKitDateFormat @private:LeanKitProfile
+    
+    foreach($private:Card in $private:Cards){
+        
+        $private:Card.StartDate = [string]$(if($private:Card.StartDate){(Get-Date $private:Card.StartDate -format $Private:LeanKitDateFormat)}else{""})
+        $private:Card.DueDate = [string]$(if($private:Card.DueDate ){Get-Date $private:Card.DueDate  -format $Private:LeanKitDateFormat}else{""})
     }
     
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=$WipOverrideComment"
-    $private:result = Invoke-RestMethod -Uri $uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json"
+    [string]$uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$boardID/AddCards?wipOverrideComment=$WipOverrideComment"
+    $private:result = Invoke-RestMethod -Uri $uri -Credential $private:LeanKitProfile.Credential -Method Post -Body $(ConvertTo-Json $cards ) -ContentType "application/json"
     if($private:result.ReplyCode -ne 201){
         Write-Warning "Failed to add cards `r`n`t$($private:result.ReplyCode) - $($private:result.ReplyText)";
         return $private:result
@@ -241,9 +266,22 @@ function Add-LeanKitCards{
 }
 
 function Get-LeanKitCard {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
         # ID of the board in which the card we're getting resides
         [parameter(mandatory=$true)]
         [int]$boardID,
@@ -253,19 +291,30 @@ function Get-LeanKitCard {
         [int]$CardID
     )
 
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth | Out-Null
-    }
+    # Check for a default profile and merge the explicit creds/url with it
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/GetCard/$private:CardID"
-    return $(Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds).ReplyData
+    [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/GetCard/$private:CardID"
+    return $(Invoke-RestMethod -Uri $private:uri  -Credential $private:LeanKitProfile.Credential).ReplyData
 }
 
 function Update-LeanKitCard{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
         
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
         # ID of the board in which to update the card
         [parameter(mandatory=$true)]
         [int]$BoardID,
@@ -343,15 +392,19 @@ function Update-LeanKitCard{
 
         # A comment to be added in case we're overriding the lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Created programatically by PSLeanKit"
+        [string]$WipOverrideComment="Created programatically by PSLeanKit"
     )
    
-    if($private:StartDate){$private:StartDate = (Get-Date $private:StartDate -format $global:LeanKitDateFormat)}
-    if($private:DueDate){$private:DueDate = Get-Date $private:DueDate  -format $global:LeanKitDateFormat}
+    # Pass any common parameters on to the superordinate cmdlet
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:LeanKitProfile.ProfileName = $ProfileName}
     
-    # Pipe the card's existing values into a hashtable for manipulation 
+    # Fetch the card and pipe it's existing values into a hashtable for manipulation 
     $private:CardHashTable = @{};
-    $private:Card = Get-LeanKitCard -boardID $private:BoardID -CardID $private:Id;
+    $private:Params = $private:LeanKitProfile.clone()
+    $private:Params.boardID = $private:BoardID 
+    $private:Params.CardID = $private:Id
+    $private:Card = Get-LeanKitCard @private:Params
     $private:Card | Get-Member | ?{$_.MemberType -eq "NoteProperty"} | %{$private:CardHashTable.add($_.name, $private:Card.$($_.name))}
 
     # Loop through our params (those that are set) and ensure the hashtable reflects the values we've updated
@@ -362,13 +415,31 @@ function Update-LeanKitCard{
         }
     }
 
-    return Update-LeanKitCards -BoardID $private:BoardID -Cards @($private:CardHashTable)  -UserWipOverrideComment $private:UserWipOverrideComment
+    $private:Params = $private:LeanKitProfile.clone();
+    $private:Params.BoardID = $private:BoardID 
+    $private:Params.Cards = @($private:CardHashTable) 
+    $private:Params.WipOverrideComment = $private:WipOverrideComment
+    return Update-LeanKitCards @private:Params
 }
 
 function Update-LeanKitCards{
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
+        # ID of the board the card resides in
         [parameter(mandatory=$true)]
         [int]$BoardID,
 
@@ -390,15 +461,26 @@ function Update-LeanKitCards{
 
         # A message to provide in case we override a lane's Work in Process limit
         [parameter(mandatory=$false)]
-        [string]$UserWipOverrideComment="Updated by PSLeankit automatically"
+        [string]$WipOverrideComment="Updated by PSLeankit automatically"
     )
 
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth | Out-Null
+    # Check for a default profile and merge the explicit creds/url with it
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
+
+    # Loop through and convert each card's date to the correct format
+    $Private:LeanKitDateFormat = Get-LeanKitDateFormat @private:LeanKitProfile
+    
+    foreach($private:Card in $private:Cards){
+        
+        $private:Card.StartDate = [string]$(if($private:Card.StartDate){(Get-Date $private:Card.StartDate -format $Private:LeanKitDateFormat)}else{""})
+        $private:Card.DueDate = [string]$(if($private:Card.DueDate ){Get-Date $private:Card.DueDate  -format $Private:LeanKitDateFormat}else{""})
     }
 
-    [string]$private:uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/UpdateCards?wipOverrideComment=$private:UserWipOverrideComment"
-    $private:result = Invoke-RestMethod -Uri $private:uri -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $private:cards) -ContentType "application/json" 
+    # Format the URL and submit the request
+    [string]$private:uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/UpdateCards?wipOverrideComment=$private:WipOverrideComment"
+    $private:result = Invoke-RestMethod -Uri $private:uri -Credential $private:LeanKitProfile.Credential -Method Post -Body $(ConvertTo-Json $private:cards) -ContentType "application/json" 
+    
+    # Check the request succeeded
     if($private:result.ReplyCode -ne 201){
         Write-Warning "Failed to update cards `r`n`t$($private:result.ReplyCode) - $($private:result.ReplyText)";
         return $private:result
@@ -409,9 +491,22 @@ function Update-LeanKitCards{
 }
 
 function Remove-LeanKitCard {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+        # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
         # ID of the board in which the card we're deleting resides
         [parameter(mandatory=$true)]
         [int]$BoardID,
@@ -420,14 +515,34 @@ function Remove-LeanKitCard {
         [parameter(mandatory=$true)]
         [int]$CardID
     )
-    
-    return Remove-LeanKitCards -BoardID $private:BoardID -CardIDs @($private:CardID)
+
+    # Pass any common parameters on to the superordinate cmdlet
+    $private:Params = Merge-LeanKitProfileDataWithExplicitParams -ExplicitParams $PsBoundParameters
+    if($ProfileName){$private:Params.ProfileName = $ProfileName}
+
+    $private:Params.BoardID = $private:BoardID 
+    $private:Params.CardIDs = @($private:CardID)
+
+    return Remove-LeanKitCards @private:Params
 }
 
 function Remove-LeanKitCards {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Profile')]
     [OutputType([array])]
     param(
+         # URL of the leankit account
+        [Parameter(ParameterSetName='Credential')]
+        [string]$URL,
+        
+        # PSCredentialsObject with the username and password needed to auth against leankit
+        [Parameter(ParameterSetName='Credential')]
+        [alias('credentials')]
+        [pscredential]$credential,
+        
+        # Name of the profile to load
+        [Parameter(ParameterSetName='Profile')]
+        [string]$ProfileName,
+
         # ID of the board in which the cards we're deleting reside
         [parameter(mandatory=$true)]
         [int]$BoardID,
@@ -437,11 +552,10 @@ function Remove-LeanKitCards {
         [int[]]$CardIDs
     )
 
-    if(!(Test-LeanKitAuthIsSet)){
-        Set-LeanKitAuth | Out-Null
-    }
+    # Check for a default profile and merge the explicit creds/url with it
+    $private:LeanKitProfile = Merge-LeanKitProfileDataWithExplicitParams -ProfileData $(Get-LeanKitProfile -ProfileName $ProfileName) -ExplicitParams $PsBoundParameters -ErrorOnIncompleteResultantData -ErrorAction Stop
 
-    [string]$uri = $global:LeanKitURL + "/Kanban/Api/Board/$private:boardID/DeleteCards/"
-    $result = Invoke-RestMethod -Uri $uri  -Credential $global:LeanKitCreds -Method Post -Body $(ConvertTo-Json $private:CardIDs) -ContentType "application/json" 
+    [string]$uri = $private:LeanKitProfile.URL + "/Kanban/Api/Board/$private:boardID/DeleteCards/"
+    $result = Invoke-RestMethod -Uri $uri  -Credential $private:LeanKitProfile.Credential -Method Post -Body $(ConvertTo-Json $private:CardIDs) -ContentType "application/json" 
     return $result.ReplyData
 }
