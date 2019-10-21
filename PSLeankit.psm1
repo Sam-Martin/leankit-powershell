@@ -221,7 +221,7 @@ function Get-LeanKitProfile{
 
     # Convert the credential property into a PSCredentials object if it exists
     if($private:ProfileProperties.credential){
-        $private:Params = @{ArgumentList = @($ProfileValues.credential.username, $(ConvertTo-SecureString $ProfileValues.credential.password))}
+        $private:Params = @{ArgumentList = @($private:ProfileProperties.credential.username, $(ConvertTo-SecureString $private:ProfileProperties.credential.password))}
         $private:ProfileProperties.credential = New-Object System.Management.Automation.PSCredential @private:Params
     }
 
